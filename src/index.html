@@ -3,71 +3,71 @@
 <head>
 	<title>Curves</title>
 
-	<link rel="stylesheet" type="text/css" href="css/styles.min.css">
+	<!--<link rel="stylesheet" type="text/css" href="css/styles.min.css">-->
 
-	<script type="text/javascript" src="js/lib/curves.min.js"></script>
+	<script type="text/javascript" src="js/modules/point.js"></script>
+	<script type="text/javascript" src="js/modules/bezierpoint.js"></script>
+	<script type="text/javascript" src="js/modules/curve.js"></script>
+
+	<!--<script type="text/javascript" src="js/lib/curves.min.js"></script>-->
+
+	<style>
+	body {
+        font-family: 'Arial', serif;
+		background-color: lightgrey
+      }
+	.grid {
+		margin: 10px;
+		border: solid black 1px
+	}
+	</style>
 </head>
 <body>
 
 	<div></div>
 
-	<canvas></canvas>
-
+	<input type="checkbox" checked onchange="curve.ToggleCloseLoop(this.checked)">Close Loop</input>
+	<br />
+	<div>
+		<canvas class="grid"></canvas>
+	</div>
+	<br />
 	<span></span>
 
 	<script type="text/javascript">
 
-		var lengthInFrames = 120;
-
 		var ctx = document.querySelector('canvas').getContext("2d");
-			ctx.canvas.width = 200*4;
-			ctx.canvas.height = 100*4;
+		ctx.canvas.width = 200*4;
+		ctx.canvas.height = 100*4;
 
 		var div = document.querySelector('div');
 		var span = document.querySelector('span');
 
-		var curve = new Curve(ctx, lengthInFrames);
-			curve.setPointStyle('#222', 8);
-			curve.setLineStyle('#f5663F', 2);
+		var curve = new Curve(ctx, ctx.canvas);
+		curve.setPointStyle('#222', 8);
+		curve.setLineStyle('#f5663F', 2);
 
-			curve.on('mousemove', function() {
-				span.innerHTML = 'X: ' + this.mouseX + ', Y: ' + this.mouseY;
-			});
+		curve.on('mousemove', function() {
+			span.innerHTML = 'X: ' + this.mouseX + ', Y: ' + this.mouseY;
+		});
 
-			curve.on('drag', function() {
-				console.log('point is being dragged');
-			});
+		/*curve.on('drag', function() {
+			console.log('point is being dragged');
+		});
 
-			curve.on('newpoint', function() {
-				console.log('point has been created');
-			});
+		curve.on('newpoint', function() {
+			console.log('point has been created');
+		});
 
-			curve.on('removepoint', function() {
-				console.log('point has beed removed');
-			});
+		curve.on('removepoint', function() {
+			console.log('point has beed removed');
+		});
 
-			curve.on('togglecontrol', function() {
-				console.log('toggled controlpoints');
-			});
+		curve.on('togglecontrol', function() {
+			console.log('toggled controlpoints');
+		});*/
 
-		var currentFrame = -1;
-
-		function loop() {
-
-			if (currentFrame > lengthInFrames) {
-				currentFrame = 0;
-			}
-
-			var curveValue = curve.xGetY(currentFrame);
-
-			div.style.left = curveValue*93 + '%';
-
-			currentFrame++;
-
-			requestAnimationFrame(loop);
-		}
-
-		loop();
+		ctx.canvas.curveInstance = curve;
 
 	</script>
 
