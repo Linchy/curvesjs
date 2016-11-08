@@ -31,6 +31,8 @@ class Curve {
 
     CloseLoop: boolean = true;
 
+    gridCellSize: number = 20;
+
     constructor(context: CanvasRenderingContext2D, htmlParent: HTMLElement, pointsJson: string, surfaceOnly?: boolean) {
 
         this.ctx = context;
@@ -198,35 +200,42 @@ class Curve {
 
         this.ctx.clearRect(0, 0, this.cw, this.ch);
 
-        this.ctx.strokeStyle = '#444';
-        this.ctx.lineWidth = 1;
-
         // Grid
 
-        /*for (i = 1; i < 10; i++) {
-            this.ctx.beginPath();
-            this.ctx.moveTo((this.cw/10)*i-0.5, 0);
-            this.ctx.lineTo((this.cw/10)*i-0.5, this.ch);
-            this.ctx.stroke();
-        }
-        for (i = 1; i < 5; i++) {
-            this.ctx.beginPath();
-            this.ctx.moveTo(0, (this.ch/5)*i-0.5);
-            this.ctx.lineTo(this.cw, (this.ch/5)*i-0.5);
-            this.ctx.stroke();
-        }*/
+        this.ctx.strokeStyle = '#444';
+        this.ctx.lineWidth = 0.5; 
 
-        this.ctx.lineWidth = 0.5;
-        for (i = 1; i < 20; i++) {
+        // small column lines
+        for (var x = 0; x < this.cw; x += this.gridCellSize) {
             this.ctx.beginPath();
-            this.ctx.moveTo((this.cw / 20) * i - 0.5, 0);
-            this.ctx.lineTo((this.cw / 20) * i - 0.5, this.ch);
+            this.ctx.moveTo(x, 0);
+            this.ctx.lineTo(x, this.ch);
             this.ctx.stroke();
         }
-        for (i = 1; i < 10; i++) {
+        
+        // small row lines
+        for (var y = 0; y < this.ch; y += this.gridCellSize) {
             this.ctx.beginPath();
-            this.ctx.moveTo(0, (this.ch / 10) * i - 0.5);
-            this.ctx.lineTo(this.cw, (this.ch / 10) * i - 0.5);
+            this.ctx.moveTo(0, y);
+            this.ctx.lineTo(this.cw, y);
+            this.ctx.stroke();
+        }
+
+        this.ctx.lineWidth = 0.6;
+
+        // large column lines
+        for (var x = 0; x < this.cw; x += (this.gridCellSize * 4)) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(x, 0);
+            this.ctx.lineTo(x, this.ch);
+            this.ctx.stroke();
+        }
+        
+        // large row lines
+        for (var y = 0; y < this.ch; y += (this.gridCellSize * 4)) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(0, y);
+            this.ctx.lineTo(this.cw, y);
             this.ctx.stroke();
         }
 
@@ -381,7 +390,8 @@ class Curve {
                 if (dist < nearestPointDist) {
                     nearestPointIndex = i;
                     nearestPointDist = dist;
-                }
+                    dragCP = null;
+                } 
 
                 // check control points
                 if (p.active) {
@@ -534,16 +544,23 @@ class Curve {
     }
 
     mousedrag(evt: any, x: number, y: number, dragCP: string) {
+
+        if (this.shiftKeyDown) {
+            x = Math.round((x) / this.gridCellSize) * this.gridCellSize;
+            y = Math.round((y) / this.gridCellSize) * this.gridCellSize;
+        }
+
         if (dragCP == 'cp1') {
             this.ActivePoint.cp1.x = x;
             this.ActivePoint.cp1.y = y;
 
             this.ActivePoint.move();
 
-            if (!this.shiftKeyDown) {
-                this.ActivePoint.cp2.x = x - this.ActivePoint.v1x * 2;
-                this.ActivePoint.cp2.y = y - this.ActivePoint.v1y * 2;
-            }
+            // make other control point follow
+            // if (!this.shiftKeyDown) {
+                 this.ActivePoint.cp2.x = x - this.ActivePoint.v1x * 2;
+                 this.ActivePoint.cp2.y = y - this.ActivePoint.v1y * 2;
+            // }
         }
         else if (dragCP == 'cp2') {
 
@@ -552,10 +569,11 @@ class Curve {
 
             this.ActivePoint.move();
 
-            if (!this.shiftKeyDown) {
-                this.ActivePoint.cp1.x = x - this.ActivePoint.v2x * 2;
-                this.ActivePoint.cp1.y = y - this.ActivePoint.v2y * 2;
-            }
+            // make other control point follow
+            // if (!this.shiftKeyDown) {
+                 this.ActivePoint.cp1.x = x - this.ActivePoint.v2x * 2;
+                 this.ActivePoint.cp1.y = y - this.ActivePoint.v2y * 2;
+            // }
         }
         else {
             this.ActivePoint.move();
