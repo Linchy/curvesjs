@@ -23,7 +23,7 @@ var BezierPoint = (function () {
     // 	this.cp2.x = this.position.x + this.cpDist;
     // }
     //}
-    BezierPoint.prototype.move = function () {
+    BezierPoint.prototype.getRelativeControlPoints = function () {
         //if (!this.collapsed) {
         this.v1x = this.cp1.x - this.position.x;
         this.v1y = this.cp1.y - this.position.y;
@@ -32,6 +32,13 @@ var BezierPoint = (function () {
         //} else {
         //	this.v1x = this.v1y = this.v2x = this.v2y = 0;
         //}
+    };
+    ;
+    BezierPoint.prototype.setRelativeControlPoints = function () {
+        this.cp1.x = this.v1x + this.position.x;
+        this.cp1.y = this.v1y + this.position.y;
+        this.cp2.x = this.v2x + this.position.x;
+        this.cp2.y = this.v2y + this.position.y;
     };
     ;
     BezierPoint.prototype.setPointStyle = function (color, size) {
@@ -69,7 +76,7 @@ var BezierPoint = (function () {
         if (evt.offsetX < 0) {
             if (dragCP == 'cp1') {
                 this.cp1.x = 0;
-                this.move();
+                this.getRelativeControlPoints();
                 if (!shiftKeyDown) {
                     this.cp2.x = 0 - this.v1x * 2;
                     this.cp2.y = mY - this.v1y * 2;
@@ -77,7 +84,7 @@ var BezierPoint = (function () {
             }
             else if (dragCP == 'cp2') {
                 this.cp2.x = 0;
-                this.move();
+                this.getRelativeControlPoints();
                 if (!shiftKeyDown) {
                     this.cp1.x = 0 - this.v2x * 2;
                     this.cp1.y = mY - this.v2y * 2;
@@ -92,7 +99,7 @@ var BezierPoint = (function () {
         else if (evt.offsetX > canvasWidth) {
             if (dragCP == 'cp1') {
                 this.cp1.x = canvasWidth;
-                this.move();
+                this.getRelativeControlPoints();
                 if (!shiftKeyDown) {
                     this.cp2.x = canvasWidth - this.v1x * 2;
                     this.cp2.y = mY - this.v1y * 2;
@@ -100,7 +107,7 @@ var BezierPoint = (function () {
             }
             else if (dragCP == 'cp2') {
                 this.cp2.x = canvasWidth;
-                this.move();
+                this.getRelativeControlPoints();
                 if (!shiftKeyDown) {
                     this.cp1.x = canvasWidth - this.v2x * 2;
                     this.cp1.y = mY - this.v2y * 2;
@@ -115,7 +122,7 @@ var BezierPoint = (function () {
         else if (evt.offsetY < 0) {
             if (dragCP == 'cp1') {
                 this.cp1.y = 0;
-                this.move();
+                this.getRelativeControlPoints();
                 if (!shiftKeyDown) {
                     this.cp2.x = mX - this.v1x * 2;
                     this.cp2.y = 0 - this.v1y * 2;
@@ -123,7 +130,7 @@ var BezierPoint = (function () {
             }
             else if (dragCP == 'cp2') {
                 this.cp2.y = 0;
-                this.move();
+                this.getRelativeControlPoints();
                 if (!shiftKeyDown) {
                     this.cp1.x = mX - this.v2x * 2;
                     this.cp1.y = 0 - this.v2y * 2;
@@ -138,7 +145,7 @@ var BezierPoint = (function () {
         else if (evt.offsetY > canvasHeight) {
             if (dragCP == 'cp1') {
                 this.cp1.y = canvasHeight;
-                this.move();
+                this.getRelativeControlPoints();
                 if (!shiftKeyDown) {
                     this.cp2.x = mX - this.v1x * 2;
                     this.cp2.y = canvasHeight - this.v1y * 2;
@@ -146,7 +153,7 @@ var BezierPoint = (function () {
             }
             else if (dragCP == 'cp2') {
                 this.cp2.y = canvasHeight;
-                this.move();
+                this.getRelativeControlPoints();
                 if (!shiftKeyDown) {
                     this.cp1.x = mX - this.v2x * 2;
                     this.cp1.y = canvasHeight - this.v2y * 2;

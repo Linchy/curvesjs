@@ -170,15 +170,21 @@ var Curve = (function () {
         // draw curve as path
         this.ctx.strokeStyle = this.lineColor;
         this.ctx.lineWidth = this.lineWidth;
-        this.ctx.beginPath();
-        this.ctx.moveTo(this.points[0].position.x, this.points[0].position.y);
         var endCount = this.points.length - (this.CloseLoop ? 0 : 1);
         for (i = 1; i <= endCount; i++) {
+            if (this.selectedLine != null && i % this.points.length == this.selectedLine.EndPointIndex) {
+                this.ctx.strokeStyle = 'orange';
+            }
+            else {
+                this.ctx.strokeStyle = this.lineColor;
+            }
             var p1 = this.points[(i - 1)];
             var p2 = this.points[i % this.points.length];
+            this.ctx.beginPath();
+            this.ctx.moveTo(p1.position.x, p1.position.y);
             this.ctx.bezierCurveTo(p1.cp2.x, p1.cp2.y, p2.cp1.x, p2.cp1.y, p2.position.x, p2.position.y);
+            this.ctx.stroke();
         }
-        this.ctx.stroke();
         // draw points that user can click and drag
         for (var i = 0; i < this.points.length; i++) {
             this.points[i].draw();
@@ -327,6 +333,7 @@ var Curve = (function () {
         });
         this.ctx.canvas.addEventListener('mousedown', function (evt) {
             evt.preventDefault();
+            curve.selectedLine = null;
             if (hoverPoint != null) {
                 curve.setActivePoint(hoverPoint);
                 isDragging = true;
@@ -334,7 +341,26 @@ var Curve = (function () {
             else {
                 curve.setActivePoint(null);
                 isDragging = false;
+                var lookup = curve.createLUT();
+                if (lookup.length > 0) {
+                    var nearestInfo = null;
+                    var nearestDist = Number.MAX_VALUE;
+                    // find closest point
+                    for (var i = 0; i < lookup.length; i++) {
+                        var dist = ((x - lookup[i].x) * (x - lookup[i].x)) + ((y - lookup[i].y) * (y - lookup[i].y));
+                        if (dist < (5 * 5) && dist < nearestDist) {
+                            nearestInfo = lookup[i];
+                            nearestDist = dist;
+                        }
+                    }
+                    if (nearestInfo != null) {
+                        curve.selectedLine = new Line(curve.points, nearestInfo.realPointIndex == 0 ? curve.points.length - 1 : nearestInfo.realPointIndex - 1, nearestInfo.realPointIndex);
+                        curve.selectedLine.getRelativeCoordFromToXY(x, y);
+                        isDragging = true;
+                    }
+                }
             }
+            curve.draw();
         });
         this.ctx.canvas.addEventListener('mouseup', function (evt) {
             dragCP = null;
@@ -396,10 +422,13 @@ var Curve = (function () {
             x = Math.round((x) / this.gridCellSize) * this.gridCellSize;
             y = Math.round((y) / this.gridCellSize) * this.gridCellSize;
         }
-        if (dragCP == 'cp1') {
+        if (this.selectedLine != null) {
+            this.selectedLine.setCoordsFromRelativeXY(x, y);
+        }
+        else if (dragCP == 'cp1') {
             this.ActivePoint.cp1.x = x;
             this.ActivePoint.cp1.y = y;
-            this.ActivePoint.move();
+            this.ActivePoint.getRelativeControlPoints();
             // make other control point follow
             // if (!this.shiftKeyDown) {
             this.ActivePoint.cp2.x = x - this.ActivePoint.v1x * 2;
@@ -408,14 +437,14 @@ var Curve = (function () {
         else if (dragCP == 'cp2') {
             this.ActivePoint.cp2.x = x;
             this.ActivePoint.cp2.y = y;
-            this.ActivePoint.move();
+            this.ActivePoint.getRelativeControlPoints();
             // make other control point follow
             // if (!this.shiftKeyDown) {
             this.ActivePoint.cp1.x = x - this.ActivePoint.v2x * 2;
             this.ActivePoint.cp1.y = y - this.ActivePoint.v2y * 2;
         }
         else {
-            this.ActivePoint.move();
+            this.ActivePoint.getRelativeControlPoints();
             this.ActivePoint.position.x = x;
             this.ActivePoint.position.y = y;
             // keep first and last point on sides

@@ -33,6 +33,8 @@ class Curve {
 
     gridCellSize: number = 20;
 
+    selectedLine: Line;
+
     constructor(context: CanvasRenderingContext2D, htmlParent: HTMLElement, pointsJson: string, surfaceOnly?: boolean) {
 
         this.ctx = context;
@@ -89,7 +91,7 @@ class Curve {
             self.shiftKeyDown = e.shiftKey;
             //self.ctrlKeyDown = e.ctrlKey;
             self.altKeyDown = e.altKey;
-        }); 
+        });
     }
 
     setPoints(pointsJson: string) {
@@ -110,11 +112,11 @@ class Curve {
     getPointsJson(): string {
         var pointMap = this.points.map(function (point) {
             return {
-                x: point.position.x, 
-                y: point.position.y, 
-                cp1X: point.cp1.x, 
-                cp1Y: point.cp1.y, 
-                cp2X: point.cp2.x, 
+                x: point.position.x,
+                y: point.position.y,
+                cp1X: point.cp1.x,
+                cp1Y: point.cp1.y,
+                cp2X: point.cp2.x,
                 cp2Y: point.cp2.y,
                 isSurfacePoint: point.isSurfacePoint
             };
@@ -203,7 +205,7 @@ class Curve {
         // Grid
 
         this.ctx.strokeStyle = '#444';
-        this.ctx.lineWidth = 0.5; 
+        this.ctx.lineWidth = 0.5;
 
         // small column lines
         for (var x = 0; x < this.cw; x += this.gridCellSize) {
@@ -212,7 +214,7 @@ class Curve {
             this.ctx.lineTo(x, this.ch);
             this.ctx.stroke();
         }
-        
+
         // small row lines
         for (var y = 0; y < this.ch; y += this.gridCellSize) {
             this.ctx.beginPath();
@@ -230,7 +232,7 @@ class Curve {
             this.ctx.lineTo(x, this.ch);
             this.ctx.stroke();
         }
-        
+
         // large row lines
         for (var y = 0; y < this.ch; y += (this.gridCellSize * 4)) {
             this.ctx.beginPath();
@@ -244,17 +246,25 @@ class Curve {
         this.ctx.strokeStyle = this.lineColor;
         this.ctx.lineWidth = this.lineWidth;
 
-        this.ctx.beginPath();
-        this.ctx.moveTo(this.points[0].position.x, this.points[0].position.y);
 
         var endCount = this.points.length - (this.CloseLoop ? 0 : 1);
 
         for (i = 1; i <= endCount; i++) {
+
+            if (this.selectedLine != null && i % this.points.length == this.selectedLine.EndPointIndex) {
+                this.ctx.strokeStyle = 'orange';
+            } else {
+                this.ctx.strokeStyle = this.lineColor;
+            }
+
             var p1 = this.points[(i - 1)];
             var p2 = this.points[i % this.points.length];
+
+            this.ctx.beginPath();
+            this.ctx.moveTo(p1.position.x, p1.position.y);
             this.ctx.bezierCurveTo(p1.cp2.x, p1.cp2.y, p2.cp1.x, p2.cp1.y, p2.position.x, p2.position.y);
+            this.ctx.stroke();
         }
-        this.ctx.stroke();
 
         // draw points that user can click and drag
 
@@ -370,7 +380,7 @@ class Curve {
             hoverPoint: BezierPoint,
             dragCP: string,
             isDragging: boolean;
-
+            
         var curve: Curve = this;
 
         var setNearestPoint = function () {
@@ -391,7 +401,7 @@ class Curve {
                     nearestPointIndex = i;
                     nearestPointDist = dist;
                     dragCP = null;
-                } 
+                }
 
                 // check control points
                 if (p.active) {
@@ -467,6 +477,8 @@ class Curve {
         this.ctx.canvas.addEventListener('mousedown', function (evt: any) {
             evt.preventDefault();
 
+            curve.selectedLine = null;
+
             if (hoverPoint != null) {
                 curve.setActivePoint(hoverPoint);
                 isDragging = true;
@@ -474,7 +486,33 @@ class Curve {
             else {
                 curve.setActivePoint(null);
                 isDragging = false;
+
+                var lookup = curve.createLUT();
+                if (lookup.length > 0) {
+            
+                    var nearestInfo: CurveSample = null;
+                    var nearestDist = Number.MAX_VALUE;
+
+                    // find closest point
+                    for (var i = 0; i < lookup.length; i++) {
+                        var dist = ((x - lookup[i].x) * (x - lookup[i].x)) + ((y - lookup[i].y) * (y - lookup[i].y));
+                        if (dist < (5*5) && dist < nearestDist) {
+                            nearestInfo = lookup[i];
+                            nearestDist = dist;
+                        }
+                    }
+
+                    if (nearestInfo != null) {
+                        curve.selectedLine = new Line(curve.points,
+                            nearestInfo.realPointIndex == 0 ? curve.points.length - 1 : nearestInfo.realPointIndex - 1,
+                            nearestInfo.realPointIndex);
+                        curve.selectedLine.getRelativeCoordFromToXY(x, y);
+                        isDragging = true;
+                    }
+                }
             }
+
+            curve.draw();
         });
 
         this.ctx.canvas.addEventListener('mouseup', function (evt: any) {
@@ -550,16 +588,19 @@ class Curve {
             y = Math.round((y) / this.gridCellSize) * this.gridCellSize;
         }
 
-        if (dragCP == 'cp1') {
+        if (this.selectedLine != null) {
+            this.selectedLine.setCoordsFromRelativeXY(x, y);
+        }
+        else if (dragCP == 'cp1') {
             this.ActivePoint.cp1.x = x;
             this.ActivePoint.cp1.y = y;
 
-            this.ActivePoint.move();
+            this.ActivePoint.getRelativeControlPoints();
 
             // make other control point follow
             // if (!this.shiftKeyDown) {
-                 this.ActivePoint.cp2.x = x - this.ActivePoint.v1x * 2;
-                 this.ActivePoint.cp2.y = y - this.ActivePoint.v1y * 2;
+            this.ActivePoint.cp2.x = x - this.ActivePoint.v1x * 2;
+            this.ActivePoint.cp2.y = y - this.ActivePoint.v1y * 2;
             // }
         }
         else if (dragCP == 'cp2') {
@@ -567,16 +608,16 @@ class Curve {
             this.ActivePoint.cp2.x = x;
             this.ActivePoint.cp2.y = y;
 
-            this.ActivePoint.move();
+            this.ActivePoint.getRelativeControlPoints();
 
             // make other control point follow
             // if (!this.shiftKeyDown) {
-                 this.ActivePoint.cp1.x = x - this.ActivePoint.v2x * 2;
-                 this.ActivePoint.cp1.y = y - this.ActivePoint.v2y * 2;
+            this.ActivePoint.cp1.x = x - this.ActivePoint.v2x * 2;
+            this.ActivePoint.cp1.y = y - this.ActivePoint.v2y * 2;
             // }
         }
         else {
-            this.ActivePoint.move();
+            this.ActivePoint.getRelativeControlPoints();
 
             this.ActivePoint.position.x = x;
             this.ActivePoint.position.y = y;
