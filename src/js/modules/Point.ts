@@ -23,6 +23,11 @@ class Point {
 		var distance = Math.sqrt(((x2 - this.x) * (x2 - this.x)) + ((y2 - this.y) * (y2 - this.y)));
 		return distance;
 	}
+	
+	SetScale(originPoint: Point, prevScale: number, newScale: number) {
+		this.x = (((this.x - originPoint.x) / prevScale) * newScale) + originPoint.x;
+		this.y = (((this.y - originPoint.y) / prevScale) * newScale) + originPoint.y;
+	}
 
 	draw() {
 		this.ctx.fillStyle = this.color;

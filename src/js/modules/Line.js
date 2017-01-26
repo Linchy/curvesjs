@@ -18,16 +18,16 @@ var Line = (function () {
         this.relativeStartPos.y = this.StartPoint.position.y - y;
         this.relativeEndPos.x = this.EndPoint.position.x - x;
         this.relativeEndPos.y = this.EndPoint.position.y - y;
-        this.StartPoint.getRelativeControlPoints();
-        this.EndPoint.getRelativeControlPoints();
+        this.StartPoint.pushRelativeControlPoints();
+        this.EndPoint.pushRelativeControlPoints();
     };
     Line.prototype.setCoordsFromRelativeXY = function (x, y) {
         this.StartPoint.position.x = this.relativeStartPos.x + x;
         this.StartPoint.position.y = this.relativeStartPos.y + y;
         this.EndPoint.position.x = this.relativeEndPos.x + x;
         this.EndPoint.position.y = this.relativeEndPos.y + y;
-        this.StartPoint.setRelativeControlPoints();
-        this.EndPoint.setRelativeControlPoints();
+        this.StartPoint.popRelativeControlPoints();
+        this.EndPoint.popRelativeControlPoints();
     };
     return Line;
 }());

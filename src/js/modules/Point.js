@@ -14,6 +14,10 @@ var Point = (function () {
         var distance = Math.sqrt(((x2 - this.x) * (x2 - this.x)) + ((y2 - this.y) * (y2 - this.y)));
         return distance;
     };
+    Point.prototype.SetScale = function (originPoint, prevScale, newScale) {
+        this.x = (((this.x - originPoint.x) / prevScale) * newScale) + originPoint.x;
+        this.y = (((this.y - originPoint.y) / prevScale) * newScale) + originPoint.y;
+    };
     Point.prototype.draw = function () {
         this.ctx.fillStyle = this.color;
         this.ctx.beginPath();

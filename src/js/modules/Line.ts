@@ -30,8 +30,8 @@ class Line {
         this.relativeEndPos.x = this.EndPoint.position.x - x;
         this.relativeEndPos.y = this.EndPoint.position.y - y;
 
-        this.StartPoint.getRelativeControlPoints();
-        this.EndPoint.getRelativeControlPoints();
+        this.StartPoint.pushRelativeControlPoints();
+        this.EndPoint.pushRelativeControlPoints();
     }
 
     setCoordsFromRelativeXY(x: number, y: number) {
@@ -41,7 +41,7 @@ class Line {
         this.EndPoint.position.x = this.relativeEndPos.x + x;
         this.EndPoint.position.y = this.relativeEndPos.y + y;
 
-        this.StartPoint.setRelativeControlPoints();
-        this.EndPoint.setRelativeControlPoints();
+        this.StartPoint.popRelativeControlPoints();
+        this.EndPoint.popRelativeControlPoints();
     }
 }

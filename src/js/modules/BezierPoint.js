@@ -11,6 +11,7 @@ var BezierPoint = (function () {
         this.r = 2;
         this.active = false;
         //this.collapsed = false;
+        this.markerData = "";
     }
     //collapse() {
     // if (!this.collapsed) {
@@ -23,7 +24,7 @@ var BezierPoint = (function () {
     // 	this.cp2.x = this.position.x + this.cpDist;
     // }
     //}
-    BezierPoint.prototype.getRelativeControlPoints = function () {
+    BezierPoint.prototype.pushRelativeControlPoints = function () {
         //if (!this.collapsed) {
         this.v1x = this.cp1.x - this.position.x;
         this.v1y = this.cp1.y - this.position.y;
@@ -34,7 +35,7 @@ var BezierPoint = (function () {
         //}
     };
     ;
-    BezierPoint.prototype.setRelativeControlPoints = function () {
+    BezierPoint.prototype.popRelativeControlPoints = function () {
         this.cp1.x = this.v1x + this.position.x;
         this.cp1.y = this.v1y + this.position.y;
         this.cp2.x = this.v2x + this.position.x;
@@ -50,6 +51,11 @@ var BezierPoint = (function () {
         this.cp2.r = size / 2;
     };
     ;
+    BezierPoint.prototype.SetScale = function (originPoint, prevScale, newScale) {
+        this.position.SetScale(originPoint, prevScale, newScale);
+        this.cp1.SetScale(originPoint, prevScale, newScale);
+        this.cp2.SetScale(originPoint, prevScale, newScale);
+    };
     BezierPoint.prototype.draw = function () {
         this.ctx.lineWidth = 0.2;
         // draw lines to control points
@@ -76,7 +82,7 @@ var BezierPoint = (function () {
         if (evt.offsetX < 0) {
             if (dragCP == 'cp1') {
                 this.cp1.x = 0;
-                this.getRelativeControlPoints();
+                this.pushRelativeControlPoints();
                 if (!shiftKeyDown) {
                     this.cp2.x = 0 - this.v1x * 2;
                     this.cp2.y = mY - this.v1y * 2;
@@ -84,7 +90,7 @@ var BezierPoint = (function () {
             }
             else if (dragCP == 'cp2') {
                 this.cp2.x = 0;
-                this.getRelativeControlPoints();
+                this.pushRelativeControlPoints();
                 if (!shiftKeyDown) {
                     this.cp1.x = 0 - this.v2x * 2;
                     this.cp1.y = mY - this.v2y * 2;
@@ -99,7 +105,7 @@ var BezierPoint = (function () {
         else if (evt.offsetX > canvasWidth) {
             if (dragCP == 'cp1') {
                 this.cp1.x = canvasWidth;
-                this.getRelativeControlPoints();
+                this.pushRelativeControlPoints();
                 if (!shiftKeyDown) {
                     this.cp2.x = canvasWidth - this.v1x * 2;
                     this.cp2.y = mY - this.v1y * 2;
@@ -107,7 +113,7 @@ var BezierPoint = (function () {
             }
             else if (dragCP == 'cp2') {
                 this.cp2.x = canvasWidth;
-                this.getRelativeControlPoints();
+                this.pushRelativeControlPoints();
                 if (!shiftKeyDown) {
                     this.cp1.x = canvasWidth - this.v2x * 2;
                     this.cp1.y = mY - this.v2y * 2;
@@ -122,7 +128,7 @@ var BezierPoint = (function () {
         else if (evt.offsetY < 0) {
             if (dragCP == 'cp1') {
                 this.cp1.y = 0;
-                this.getRelativeControlPoints();
+                this.pushRelativeControlPoints();
                 if (!shiftKeyDown) {
                     this.cp2.x = mX - this.v1x * 2;
                     this.cp2.y = 0 - this.v1y * 2;
@@ -130,7 +136,7 @@ var BezierPoint = (function () {
             }
             else if (dragCP == 'cp2') {
                 this.cp2.y = 0;
-                this.getRelativeControlPoints();
+                this.pushRelativeControlPoints();
                 if (!shiftKeyDown) {
                     this.cp1.x = mX - this.v2x * 2;
                     this.cp1.y = 0 - this.v2y * 2;
@@ -145,7 +151,7 @@ var BezierPoint = (function () {
         else if (evt.offsetY > canvasHeight) {
             if (dragCP == 'cp1') {
                 this.cp1.y = canvasHeight;
-                this.getRelativeControlPoints();
+                this.pushRelativeControlPoints();
                 if (!shiftKeyDown) {
                     this.cp2.x = mX - this.v1x * 2;
                     this.cp2.y = canvasHeight - this.v1y * 2;
@@ -153,7 +159,7 @@ var BezierPoint = (function () {
             }
             else if (dragCP == 'cp2') {
                 this.cp2.y = canvasHeight;
-                this.getRelativeControlPoints();
+                this.pushRelativeControlPoints();
                 if (!shiftKeyDown) {
                     this.cp1.x = mX - this.v2x * 2;
                     this.cp1.y = canvasHeight - this.v2y * 2;

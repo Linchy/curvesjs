@@ -2,7 +2,7 @@ class Curve {
 
     htmlParent: HTMLElement;
 
-    surfaceOnly: boolean;
+    args: any;
 
     cpDist: number;
 
@@ -15,9 +15,6 @@ class Curve {
     ctx: CanvasRenderingContext2D;
     cw: number;
     ch: number;
-
-    mouseX: number;
-    mouseY: number;
 
     events: any;
 
@@ -35,15 +32,28 @@ class Curve {
 
     selectedLine: Line;
 
-    constructor(context: CanvasRenderingContext2D, htmlParent: HTMLElement, pointsJson: string, surfaceOnly?: boolean) {
+    originPoint: Point;
+
+    scaleFactor: number = 1;
+
+    mouseX: number;
+    mouseY: number;
+
+    markerDataTextbox: HTMLInputElement;
+
+    constructor(context: CanvasRenderingContext2D, htmlParent: HTMLElement, pointsJson: string, args: any, markerDataTextbox: HTMLInputElement) {
 
         this.ctx = context;
         this.cw = context.canvas.width;
         this.ch = context.canvas.height;
 
         this.htmlParent = htmlParent;
+        this.markerDataTextbox = markerDataTextbox;
 
-        this.surfaceOnly = (surfaceOnly === undefined ? false : surfaceOnly);
+        this.args = (args === undefined ? {} : args);
+
+        if (args.curveOnly)
+            this.CloseLoop = false;
 
         this.cpDist = 40;
 
@@ -53,26 +63,38 @@ class Curve {
         this.lineColor = 'cornflowerblue';
         this.lineWidth = 1;
 
+        this.originPoint = new Point(
+            (this.cw / 2),// - (this.pointSize / 2), 
+            (this.ch / 2),// - (this.pointSize / 2), 
+            'red', this.pointSize * 2, context);
+
         if (!pointsJson) {
-            var offsetX = 200;
+            var offsetX = 80;
             var offsetY = 80;
 
-            this.points = [
-                new BezierPoint(offsetX, offsetY, context, this.pointColor, this.pointSize, this.cpDist, false, true),
-                new BezierPoint(context.canvas.width - offsetX, offsetY, context, this.pointColor, this.pointSize, this.cpDist, false, true),
-                new BezierPoint(context.canvas.width - offsetX, context.canvas.height - offsetY, context, this.pointColor, this.pointSize, this.cpDist, true, true),
-                new BezierPoint(offsetX, context.canvas.height - offsetY, context, this.pointColor, this.pointSize, this.cpDist, true, true),
-            ];
-
+            if (args.curveOnly)
+            {
+                // add straight line
+                this.points = [
+                    new BezierPoint(this.originPoint.x, this.originPoint.y, context, this.pointColor, this.pointSize, this.cpDist, false, true),
+                    new BezierPoint(this.originPoint.x + 320, this.originPoint.y, context, this.pointColor, this.pointSize, this.cpDist, false, true)
+                ];
+            }
+            else
+            {
+                // add square
+                this.points = [
+                    new BezierPoint(offsetX, offsetY, context, this.pointColor, this.pointSize, this.cpDist, false, true),
+                    new BezierPoint(context.canvas.width - offsetX, offsetY, context, this.pointColor, this.pointSize, this.cpDist, false, true),
+                    new BezierPoint(context.canvas.width - offsetX, context.canvas.height - offsetY, context, this.pointColor, this.pointSize, this.cpDist, true, true),
+                    new BezierPoint(offsetX, context.canvas.height - offsetY, context, this.pointColor, this.pointSize, this.cpDist, true, true),
+                ];
+            }
             this.setPointsAttr();
         }
         else {
             this.setPoints(pointsJson);
         }
-
-
-        this.mouseX = 0;
-        this.mouseY = 0;
 
         this.events = {};
 
@@ -97,6 +119,9 @@ class Curve {
     setPoints(pointsJson: string) {
         var dataObj = JSON.parse(pointsJson);
         this.CloseLoop = dataObj.closeLoop;
+
+        var jsonOrigin = dataObj.origin;
+
         this.points = []
         for (var i = 0; i < dataObj.points.length; i++) {
             var point = new BezierPoint(dataObj.points[i].x, dataObj.points[i].y, this.ctx, this.pointColor, this.pointSize, this.cpDist, false, dataObj.points[i].isSurfacePoint);
@@ -104,30 +129,50 @@ class Curve {
             point.cp1.y = dataObj.points[i].cp1Y;
             point.cp2.x = dataObj.points[i].cp2X;
             point.cp2.y = dataObj.points[i].cp2Y;
+            if (dataObj.points[i].markerData)
+                point.markerData = dataObj.points[i].markerData.join(';');
+
+            // move surface so its origin is in center of canvas
+            if (jsonOrigin != null) {
+                point.pushRelativeControlPoints();
+                point.position.x = (point.position.x - jsonOrigin.x) + this.originPoint.x;
+                point.position.y = (point.position.y - jsonOrigin.y) + this.originPoint.y;
+                point.popRelativeControlPoints();
+            }
+
             this.points.push(point);
         }
         this.setPointsAttr();
     }
 
     getPointsJson(): string {
+
+        var self = this;
+
+        var unscaleFunc = function(coord: number, coordOrigin: number){
+            return ((coord - coordOrigin) / self.scaleFactor) + coordOrigin;
+        };
+
         var pointMap = this.points.map(function (point) {
             return {
-                x: point.position.x,
-                y: point.position.y,
-                cp1X: point.cp1.x,
-                cp1Y: point.cp1.y,
-                cp2X: point.cp2.x,
-                cp2Y: point.cp2.y,
-                isSurfacePoint: point.isSurfacePoint
+                x: unscaleFunc(point.position.x, self.originPoint.x),
+                y: unscaleFunc(point.position.y, self.originPoint.y),
+                cp1X: unscaleFunc(point.cp1.x, self.originPoint.x),
+                cp1Y: unscaleFunc(point.cp1.y, self.originPoint.y),
+                cp2X: unscaleFunc(point.cp2.x, self.originPoint.x),
+                cp2Y: unscaleFunc(point.cp2.y, self.originPoint.y),
+                isSurfacePoint: point.isSurfacePoint,
+                markerData: point.markerData.split(';')
             };
         });
 
         var dataObj: any = {
             closeLoop: this.CloseLoop,
-            points: pointMap
+            origin: { x: this.originPoint.x, y: this.originPoint.y },
+            points: pointMap 
         };
 
-        if (this.surfaceOnly) {
+        if (this.args.closedSurfaceOnly) {
             dataObj.baseSurface = 'Square';
         }
 
@@ -148,8 +193,11 @@ class Curve {
             this.ActivePoint.active = false;
 
         this.ActivePoint = point;
-        if (point)
+        if (this.ActivePoint)
+        {
             this.ActivePoint.active = true;
+            this.markerDataTextbox.value = this.ActivePoint.markerData;
+        }
 
         this.draw();
     };
@@ -164,7 +212,8 @@ class Curve {
                 insertIndex,
                 nearestInfo.t);
         }
-        else {
+        else if (!this.args.curveOnly)   // don't allow adding after last point
+        {
             point = new BezierPoint(x, y, this.ctx, this.pointColor, this.pointSize, this.cpDist);
             this.points.push(point);
         }
@@ -196,6 +245,23 @@ class Curve {
         this.CloseLoop = close;
         this.draw();
         this.setPointsAttr();
+    }
+
+    MarkerDataOnChange(value: string) {
+        if (this.ActivePoint)
+            this.ActivePoint.markerData = value;
+        this.setPointsAttr();
+    }
+
+    SetScale(newScaleStr: string) {
+        var newScale: number = parseFloat(newScaleStr);
+        if (newScale > 0) {
+            for (var i = 0; i < this.points.length; i++) {
+                this.points[i].SetScale(this.originPoint, this.scaleFactor, newScale);
+            }
+            this.scaleFactor = newScale;
+            this.draw();
+        }
     }
 
     draw() {
@@ -240,6 +306,22 @@ class Curve {
             this.ctx.lineTo(this.cw, y);
             this.ctx.stroke();
         }
+
+        // axis lines
+        this.ctx.lineWidth = 0.8;
+        // X
+        this.ctx.beginPath();
+        this.ctx.moveTo(0, this.ch / 2);
+        this.ctx.lineTo(this.cw, this.ch / 2);
+        this.ctx.stroke();
+        // Y
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.cw / 2, 0);
+        this.ctx.lineTo(this.cw / 2, this.ch);
+        this.ctx.stroke();
+
+        // origin
+        this.originPoint.draw();
 
         // draw curve as path
 
@@ -374,13 +456,15 @@ class Curve {
 
         var x: number,
             y: number,
+            mDownOffsetX: number,
+            mDownOffsetY: number,
             nearestPoint: BezierPoint,
             nearestPointIndex: number,
             nearestPointDist: number,
             hoverPoint: BezierPoint,
             dragCP: string,
             isDragging: boolean;
-            
+
         var curve: Curve = this;
 
         var setNearestPoint = function () {
@@ -446,10 +530,12 @@ class Curve {
             x = evt.clientX - bbox.left;
             y = evt.clientY - bbox.top;
 
-            curve.mouseX = x;
-            curve.mouseY = y;
+            curve.mouseX = x - curve.originPoint.x;
+            curve.mouseY = (y - curve.originPoint.y) * -1;
 
             if (isDragging) {
+                x -= mDownOffsetX;
+                y -= mDownOffsetY;
                 curve.mousedrag(evt, x, y, dragCP);
             }
             else {
@@ -481,22 +567,36 @@ class Curve {
 
             if (hoverPoint != null) {
                 curve.setActivePoint(hoverPoint);
+                 if (dragCP == 'cp1') {
+                    mDownOffsetX = x - hoverPoint.cp1.x;
+                    mDownOffsetY = y - hoverPoint.cp1.y;
+                }
+                else if (dragCP == 'cp2') {
+                    mDownOffsetX = x - hoverPoint.cp2.x;
+                    mDownOffsetY = y - hoverPoint.cp2.y;
+                }
+                else {
+                    mDownOffsetX = x - hoverPoint.position.x;
+                    mDownOffsetY = y - hoverPoint.position.y;
+                }
                 isDragging = true;
             }
             else {
                 curve.setActivePoint(null);
+                mDownOffsetX = 0;
+                mDownOffsetY = 0;
                 isDragging = false;
 
                 var lookup = curve.createLUT();
                 if (lookup.length > 0) {
-            
+
                     var nearestInfo: CurveSample = null;
                     var nearestDist = Number.MAX_VALUE;
 
                     // find closest point
                     for (var i = 0; i < lookup.length; i++) {
                         var dist = ((x - lookup[i].x) * (x - lookup[i].x)) + ((y - lookup[i].y) * (y - lookup[i].y));
-                        if (dist < (5*5) && dist < nearestDist) {
+                        if (dist < (5 * 5) && dist < nearestDist) {
                             nearestInfo = lookup[i];
                             nearestDist = dist;
                         }
@@ -550,11 +650,13 @@ class Curve {
                 var nearestDist = Number.MAX_VALUE;
 
                 // find closest point
+                var nearestInfoIndex = 0;
                 for (var i = 0; i < lookup.length; i++) {
                     var dist = ((x - lookup[i].x) * (x - lookup[i].x)) + ((y - lookup[i].y) * (y - lookup[i].y));
                     if (dist < nearestDist) {
                         nearestInfo = lookup[i];
                         nearestDist = dist;
+                        nearestInfoIndex = i;
                     }
                 }
 
@@ -564,7 +666,7 @@ class Curve {
                 this.style.cursor = 'pointer';
 
                 // raise event
-                if (curve.events.onnewpoint != null)
+                if (newPoint != null && curve.events.onnewpoint != null)
                     curve.events.onnewpoint();
             }
             else if (!curve.ActivePoint.isSurfacePoint) // remove point
@@ -595,7 +697,7 @@ class Curve {
             this.ActivePoint.cp1.x = x;
             this.ActivePoint.cp1.y = y;
 
-            this.ActivePoint.getRelativeControlPoints();
+            this.ActivePoint.pushRelativeControlPoints();
 
             // make other control point follow
             // if (!this.shiftKeyDown) {
@@ -608,7 +710,7 @@ class Curve {
             this.ActivePoint.cp2.x = x;
             this.ActivePoint.cp2.y = y;
 
-            this.ActivePoint.getRelativeControlPoints();
+            this.ActivePoint.pushRelativeControlPoints();
 
             // make other control point follow
             // if (!this.shiftKeyDown) {
@@ -617,7 +719,7 @@ class Curve {
             // }
         }
         else {
-            this.ActivePoint.getRelativeControlPoints();
+            this.ActivePoint.pushRelativeControlPoints();
 
             this.ActivePoint.position.x = x;
             this.ActivePoint.position.y = y;

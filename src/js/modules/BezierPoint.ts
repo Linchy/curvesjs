@@ -24,6 +24,8 @@ class BezierPoint {
 	v2x: number;
 	v2y: number;
 
+	markerData: string;
+
 	constructor(x: number, y: number, context: any, color: any, size: number, cpDist: number, reverseCpX?: boolean, isSurfacePoint?: boolean) {
 
 		this.cpDist = cpDist;
@@ -44,6 +46,7 @@ class BezierPoint {
 
 		//this.collapsed = false;
 
+		this.markerData = "";
 	}
 
 	//collapse() {
@@ -58,7 +61,7 @@ class BezierPoint {
 	// }
 	//}
 
-	getRelativeControlPoints() {
+	pushRelativeControlPoints() {
 		//if (!this.collapsed) {
 		this.v1x = this.cp1.x - this.position.x;
 		this.v1y = this.cp1.y - this.position.y;
@@ -70,7 +73,7 @@ class BezierPoint {
 
 	};
 
-	setRelativeControlPoints() {
+	popRelativeControlPoints() {
 		this.cp1.x = this.v1x + this.position.x;
 		this.cp1.y = this.v1y + this.position.y;
 		this.cp2.x = this.v2x + this.position.x;
@@ -85,6 +88,12 @@ class BezierPoint {
 		this.cp1.r = size / 2;
 		this.cp2.r = size / 2;
 	};
+
+	SetScale(originPoint: Point, prevScale: number, newScale: number) {
+		this.position.SetScale(originPoint, prevScale, newScale);
+		this.cp1.SetScale(originPoint, prevScale, newScale);
+		this.cp2.SetScale(originPoint, prevScale, newScale);
+	}
 
 	draw() {
 
@@ -121,7 +130,7 @@ class BezierPoint {
 			if (dragCP == 'cp1') {
 				this.cp1.x = 0;
 
-				this.getRelativeControlPoints();
+				this.pushRelativeControlPoints();
 
 				if (!shiftKeyDown) {
 					this.cp2.x = 0 - this.v1x * 2;
@@ -131,7 +140,7 @@ class BezierPoint {
 			else if (dragCP == 'cp2') {
 				this.cp2.x = 0;
 
-				this.getRelativeControlPoints();
+				this.pushRelativeControlPoints();
 
 				if (!shiftKeyDown) {
 					this.cp1.x = 0 - this.v2x * 2;
@@ -149,7 +158,7 @@ class BezierPoint {
 			if (dragCP == 'cp1') {
 				this.cp1.x = canvasWidth;
 
-				this.getRelativeControlPoints();
+				this.pushRelativeControlPoints();
 
 				if (!shiftKeyDown) {
 					this.cp2.x = canvasWidth - this.v1x * 2;
@@ -159,7 +168,7 @@ class BezierPoint {
 			else if (dragCP == 'cp2') {
 				this.cp2.x = canvasWidth;
 
-				this.getRelativeControlPoints();
+				this.pushRelativeControlPoints();
 
 				if (!shiftKeyDown) {
 					this.cp1.x = canvasWidth - this.v2x * 2;
@@ -177,7 +186,7 @@ class BezierPoint {
 			if (dragCP == 'cp1') {
 				this.cp1.y = 0;
 
-				this.getRelativeControlPoints();
+				this.pushRelativeControlPoints();
 
 				if (!shiftKeyDown) {
 					this.cp2.x = mX - this.v1x * 2;
@@ -187,7 +196,7 @@ class BezierPoint {
 			else if (dragCP == 'cp2') {
 				this.cp2.y = 0;
 
-				this.getRelativeControlPoints();
+				this.pushRelativeControlPoints();
 
 				if (!shiftKeyDown) {
 					this.cp1.x = mX - this.v2x * 2;
@@ -205,7 +214,7 @@ class BezierPoint {
 			if (dragCP == 'cp1') {
 				this.cp1.y = canvasHeight;
 
-				this.getRelativeControlPoints();
+				this.pushRelativeControlPoints();
 				if (!shiftKeyDown) {
 					this.cp2.x = mX - this.v1x * 2;
 					this.cp2.y = canvasHeight - this.v1y * 2;
@@ -214,7 +223,7 @@ class BezierPoint {
 			else if (dragCP == 'cp2') {
 				this.cp2.y = canvasHeight;
 
-				this.getRelativeControlPoints();
+				this.pushRelativeControlPoints();
 
 				if (!shiftKeyDown) {
 					this.cp1.x = mX - this.v2x * 2;
