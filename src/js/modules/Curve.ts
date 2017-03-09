@@ -391,8 +391,20 @@ class Curve {
         this.ctx.strokeStyle = '#444';
         this.ctx.lineWidth = 0.5;
 
+        // get col offset, so always lines up with origin
+        var colCount = this.cw / this.gridCellSize;
+        var halfColCount = colCount / 2;
+        var colRem = halfColCount % Math.floor(halfColCount);
+        var gridColOffsetX = -(this.gridCellSize - (colRem * this.gridCellSize));
+
+        // get row offset, so always lines up with origin
+        var rowCount = this.ch / this.gridCellSize;
+        var halfRowCount = rowCount / 2;
+        var rowRem = halfRowCount % Math.floor(halfRowCount);
+        var gridColOffsetY = -(this.gridCellSize - (rowRem * this.gridCellSize));
+
         // small column lines
-        for (var x = 0; x < this.cw; x += this.gridCellSize) {
+        for (var x = gridColOffsetX; x < this.cw; x += this.gridCellSize) {
             this.ctx.beginPath();
             this.ctx.moveTo(x, 0);
             this.ctx.lineTo(x, this.ch);
@@ -400,7 +412,7 @@ class Curve {
         }
 
         // small row lines
-        for (var y = 0; y < this.ch; y += this.gridCellSize) {
+        for (var y = gridColOffsetY; y < this.ch; y += this.gridCellSize) {
             this.ctx.beginPath();
             this.ctx.moveTo(0, y);
             this.ctx.lineTo(this.cw, y);
@@ -409,8 +421,9 @@ class Curve {
 
         this.ctx.lineWidth = 0.6;
 
+
         // large column lines
-        for (var x = 0; x < this.cw; x += (this.gridCellSize * 4)) {
+        for (var x = gridColOffsetX; x < this.cw; x += (this.gridCellSize * 4)) {
             this.ctx.beginPath();
             this.ctx.moveTo(x, 0);
             this.ctx.lineTo(x, this.ch);
@@ -418,7 +431,7 @@ class Curve {
         }
 
         // large row lines
-        for (var y = 0; y < this.ch; y += (this.gridCellSize * 4)) {
+        for (var y = gridColOffsetY; y < this.ch; y += (this.gridCellSize * 4)) {
             this.ctx.beginPath();
             this.ctx.moveTo(0, y);
             this.ctx.lineTo(this.cw, y);
