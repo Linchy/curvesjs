@@ -1,6 +1,6 @@
 class Curve {
 
-    htmlParent: HTMLElement;
+    //htmlParent: HTMLElement;
 
     args: any;
 
@@ -39,20 +39,24 @@ class Curve {
     mouseX: number;
     mouseY: number;
 
-    markerDataTextbox: HTMLInputElement;
+    curveEditor: any;
+ 
+    // selected blockly block
+    block: any;
 
-    constructor(context: CanvasRenderingContext2D, htmlParent: HTMLElement, pointsJson: string, args: any, markerDataTextbox: HTMLInputElement) {
+    constructor(context: CanvasRenderingContext2D, //htmlParent: HTMLElement, pointsJson: string, args: any, 
+        curveEditor: any) {
 
         this.ctx = context;
         this.cw = context.canvas.width;
         this.ch = context.canvas.height;
 
-        this.htmlParent = htmlParent;
-        this.markerDataTextbox = markerDataTextbox;
+        //this.htmlParent = htmlParent;
+        this.curveEditor = curveEditor;
 
-        this.args = (args === undefined ? {} : args);
+        this.args = {};//(args === undefined ? {} : args);
 
-        if (args.curveOnly)
+        if (this.args.curveOnly)
             this.CloseLoop = false;
 
         this.cpDist = 40;
@@ -68,11 +72,12 @@ class Curve {
             (this.ch / 2),// - (this.pointSize / 2), 
             'red', this.pointSize * 2, context);
 
-        if (!pointsJson) {
+        //if (!pointsJson) 
+        {
             var offsetX = 80;
             var offsetY = 80;
 
-            if (args.curveOnly)
+            if (this.args.curveOnly)
             {
                 // add straight line
                 this.points = [
@@ -90,11 +95,11 @@ class Curve {
                     new BezierPoint(offsetX, context.canvas.height - offsetY, context, this.pointColor, this.pointSize, this.cpDist, true, true),
                 ];
             }
-            this.setPointsAttr();
+            //this.setPointsAttr();
         }
-        else {
-            this.setPoints(pointsJson);
-        }
+        // else {
+        //     this.setPoints(pointsJson);
+        // }
 
         this.events = {};
 
@@ -116,13 +121,23 @@ class Curve {
         });
     }
 
+    setBlock(block: any) {
+        this.block = block;
+        if (block)
+            this.setPoints(block.getValue());
+    }
+
     setPoints(pointsJson: string) {
+        if (pointsJson.length == 0)
+            return;
+
+        this.points = []
+
         var dataObj = JSON.parse(pointsJson);
         this.CloseLoop = dataObj.closeLoop;
 
         var jsonOrigin = dataObj.origin;
-
-        this.points = []
+ 
         for (var i = 0; i < dataObj.points.length; i++) {
             var point = new BezierPoint(dataObj.points[i].x, dataObj.points[i].y, this.ctx, this.pointColor, this.pointSize, this.cpDist, false, dataObj.points[i].isSurfacePoint);
             point.cp1.x = dataObj.points[i].cp1X;
@@ -181,7 +196,7 @@ class Curve {
     }
 
     setPointsAttr() {
-        this.htmlParent.setAttribute('points', this.getPointsJson());
+        this.block.valueDiv.setAttribute('points', this.getPointsJson());
     }
 
     on(event: any, func: any) {
@@ -196,8 +211,13 @@ class Curve {
         if (this.ActivePoint)
         {
             this.ActivePoint.active = true;
-            this.markerDataTextbox.value = this.ActivePoint.markerData;
+            this.curveEditor.markerNameInput.val(this.ActivePoint.markerData);
+            this.curveEditor.isUVSeamInput.prop('checked', this.ActivePoint.isUVSeamInput);
+            this.curveEditor.uvNameInput.val(this.ActivePoint.uvNameInput);
+            this.events.onselectpoint();
         }
+        else
+            this.events.ondeselectpoint();
 
         this.draw();
     };
@@ -247,9 +267,21 @@ class Curve {
         this.setPointsAttr();
     }
 
-    MarkerDataOnChange(value: string) {
+    MarkerNameOnChange(value: string) {
         if (this.ActivePoint)
             this.ActivePoint.markerData = value;
+        this.setPointsAttr();
+    }
+
+    isUVSeamOnChange(value: boolean) {
+        if (this.ActivePoint)
+            this.ActivePoint.isUVSeamInput = value;
+        this.setPointsAttr();
+    }
+
+    UVNameOnChange(value: string) {
+        if (this.ActivePoint)
+            this.ActivePoint.uvNameInput = value;
         this.setPointsAttr();
     }
 
@@ -262,6 +294,32 @@ class Curve {
             this.scaleFactor = newScale;
             this.draw();
         }
+    }
+
+    onResize() {
+        var curWidth = parseInt(this.ctx.canvas.style.width) || this.ctx.canvas.width;
+        var curHeight = parseInt(this.ctx.canvas.style.height) || this.ctx.canvas.height;
+        
+        var sx = curWidth / this.cw;
+        var sy = curHeight / this.ch;
+
+        for (var i = 0; i < this.points.length; i++) {
+            var p = this.points[i];
+            p.position.x *= sx;
+            p.position.y *= sy;
+            p.cp1.x *= sx;
+            p.cp1.y *= sy;
+            p.cp2.x *= sx;
+            p.cp2.y *= sy;
+        }
+
+        this.cw = this.ctx.canvas.width = curWidth;
+        this.ch = this.ctx.canvas.height = curHeight;
+
+        this.originPoint.x  = (this.cw / 2);
+        this.originPoint.y  = (this.ch / 2);
+
+        this.draw();
     }
 
     draw() {

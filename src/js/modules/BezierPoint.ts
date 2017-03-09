@@ -25,6 +25,8 @@ class BezierPoint {
 	v2y: number;
 
 	markerData: string;
+	isUVSeamInput: boolean;
+	uvNameInput: string;
 
 	constructor(x: number, y: number, context: any, color: any, size: number, cpDist: number, reverseCpX?: boolean, isSurfacePoint?: boolean) {
 
@@ -33,7 +35,7 @@ class BezierPoint {
 		this.color = color;
 		this.size = size;
 
-		this.isSurfacePoint = isSurfacePoint;
+		this.isSurfacePoint = isSurfacePoint || false;
 
 		this.position = new Point(x, y, this.color, this.size, context);
 		this.cp1 = new Point(x + ((reverseCpX ? 1 : -1) * this.cpDist), y, 'red', this.size, context);
@@ -47,6 +49,8 @@ class BezierPoint {
 		//this.collapsed = false;
 
 		this.markerData = "";
+		this.isUVSeamInput = false;
+		this.uvNameInput = "";
 	}
 
 	//collapse() {

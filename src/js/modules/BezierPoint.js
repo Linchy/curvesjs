@@ -3,7 +3,7 @@ var BezierPoint = (function () {
         this.cpDist = cpDist;
         this.color = color;
         this.size = size;
-        this.isSurfacePoint = isSurfacePoint;
+        this.isSurfacePoint = isSurfacePoint || false;
         this.position = new Point(x, y, this.color, this.size, context);
         this.cp1 = new Point(x + ((reverseCpX ? 1 : -1) * this.cpDist), y, 'red', this.size, context);
         this.cp2 = new Point(x + ((reverseCpX ? -1 : 1) * this.cpDist), y, 'blue', this.size, context);
@@ -12,6 +12,8 @@ var BezierPoint = (function () {
         this.active = false;
         //this.collapsed = false;
         this.markerData = "";
+        this.isUVSeamInput = false;
+        this.uvNameInput = "";
     }
     //collapse() {
     // if (!this.collapsed) {

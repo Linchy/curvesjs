@@ -1,5 +1,6 @@
 var Curve = (function () {
-    function Curve(context, htmlParent, pointsJson, args, markerDataTextbox) {
+    function Curve(context, //htmlParent: HTMLElement, pointsJson: string, args: any, 
+        curveEditor) {
         this.shiftKeyDown = false; // 16
         //var ctrlKeyDown: boolean = false; // 17
         this.altKeyDown = false; // 18
@@ -10,10 +11,10 @@ var Curve = (function () {
         this.ctx = context;
         this.cw = context.canvas.width;
         this.ch = context.canvas.height;
-        this.htmlParent = htmlParent;
-        this.markerDataTextbox = markerDataTextbox;
-        this.args = (args === undefined ? {} : args);
-        if (args.curveOnly)
+        //this.htmlParent = htmlParent;
+        this.curveEditor = curveEditor;
+        this.args = {}; //(args === undefined ? {} : args);
+        if (this.args.curveOnly)
             this.CloseLoop = false;
         this.cpDist = 40;
         this.pointColor = '#f00';
@@ -23,10 +24,11 @@ var Curve = (function () {
         this.originPoint = new Point((this.cw / 2), // - (this.pointSize / 2), 
         (this.ch / 2), // - (this.pointSize / 2), 
         'red', this.pointSize * 2, context);
-        if (!pointsJson) {
+        //if (!pointsJson) 
+        {
             var offsetX = 80;
             var offsetY = 80;
-            if (args.curveOnly) {
+            if (this.args.curveOnly) {
                 // add straight line
                 this.points = [
                     new BezierPoint(this.originPoint.x, this.originPoint.y, context, this.pointColor, this.pointSize, this.cpDist, false, true),
@@ -42,11 +44,10 @@ var Curve = (function () {
                     new BezierPoint(offsetX, context.canvas.height - offsetY, context, this.pointColor, this.pointSize, this.cpDist, true, true),
                 ];
             }
-            this.setPointsAttr();
         }
-        else {
-            this.setPoints(pointsJson);
-        }
+        // else {
+        //     this.setPoints(pointsJson);
+        // }
         this.events = {};
         this.canvasEvents();
         this.draw();
@@ -62,11 +63,18 @@ var Curve = (function () {
             self.altKeyDown = e.altKey;
         });
     }
+    Curve.prototype.setBlock = function (block) {
+        this.block = block;
+        if (block)
+            this.setPoints(block.getValue());
+    };
     Curve.prototype.setPoints = function (pointsJson) {
+        if (pointsJson.length == 0)
+            return;
+        this.points = [];
         var dataObj = JSON.parse(pointsJson);
         this.CloseLoop = dataObj.closeLoop;
         var jsonOrigin = dataObj.origin;
-        this.points = [];
         for (var i = 0; i < dataObj.points.length; i++) {
             var point = new BezierPoint(dataObj.points[i].x, dataObj.points[i].y, this.ctx, this.pointColor, this.pointSize, this.cpDist, false, dataObj.points[i].isSurfacePoint);
             point.cp1.x = dataObj.points[i].cp1X;
@@ -115,7 +123,7 @@ var Curve = (function () {
         return pointsStr;
     };
     Curve.prototype.setPointsAttr = function () {
-        this.htmlParent.setAttribute('points', this.getPointsJson());
+        this.block.valueDiv.setAttribute('points', this.getPointsJson());
     };
     Curve.prototype.on = function (event, func) {
         this.events['on' + event] = func.bind(this);
@@ -127,8 +135,13 @@ var Curve = (function () {
         this.ActivePoint = point;
         if (this.ActivePoint) {
             this.ActivePoint.active = true;
-            this.markerDataTextbox.value = this.ActivePoint.markerData;
+            this.curveEditor.markerNameInput.val(this.ActivePoint.markerData);
+            this.curveEditor.isUVSeamInput.prop('checked', this.ActivePoint.isUVSeamInput);
+            this.curveEditor.uvNameInput.val(this.ActivePoint.uvNameInput);
+            this.events.onselectpoint();
         }
+        else
+            this.events.ondeselectpoint();
         this.draw();
     };
     ;
@@ -166,9 +179,19 @@ var Curve = (function () {
         this.draw();
         this.setPointsAttr();
     };
-    Curve.prototype.MarkerDataOnChange = function (value) {
+    Curve.prototype.MarkerNameOnChange = function (value) {
         if (this.ActivePoint)
             this.ActivePoint.markerData = value;
+        this.setPointsAttr();
+    };
+    Curve.prototype.isUVSeamOnChange = function (value) {
+        if (this.ActivePoint)
+            this.ActivePoint.isUVSeamInput = value;
+        this.setPointsAttr();
+    };
+    Curve.prototype.UVNameOnChange = function (value) {
+        if (this.ActivePoint)
+            this.ActivePoint.uvNameInput = value;
         this.setPointsAttr();
     };
     Curve.prototype.SetScale = function (newScaleStr) {
@@ -180,6 +203,26 @@ var Curve = (function () {
             this.scaleFactor = newScale;
             this.draw();
         }
+    };
+    Curve.prototype.onResize = function () {
+        var curWidth = parseInt(this.ctx.canvas.style.width) || this.ctx.canvas.width;
+        var curHeight = parseInt(this.ctx.canvas.style.height) || this.ctx.canvas.height;
+        var sx = curWidth / this.cw;
+        var sy = curHeight / this.ch;
+        for (var i = 0; i < this.points.length; i++) {
+            var p = this.points[i];
+            p.position.x *= sx;
+            p.position.y *= sy;
+            p.cp1.x *= sx;
+            p.cp1.y *= sy;
+            p.cp2.x *= sx;
+            p.cp2.y *= sy;
+        }
+        this.cw = this.ctx.canvas.width = curWidth;
+        this.ch = this.ctx.canvas.height = curHeight;
+        this.originPoint.x = (this.cw / 2);
+        this.originPoint.y = (this.ch / 2);
+        this.draw();
     };
     Curve.prototype.draw = function () {
         this.ctx.clearRect(0, 0, this.cw, this.ch);
