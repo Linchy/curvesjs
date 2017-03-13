@@ -17,6 +17,9 @@ class Curve {
     cw: number;
     ch: number;
 
+    gridColOffsetX: number;
+    gridColOffsetY: number;
+
     events: any;
 
     points: BezierPoint[];
@@ -65,52 +68,21 @@ class Curve {
 
         this.args = {};//(args === undefined ? {} : args);
 
-        if (this.args.curveOnly)
-            this.CloseLoop = false;
+        this.points = [];
 
         this.cpDist = 40;
 
-        this.pointColor = '#f00';
-        this.pointSize = 3;
+        this.pointColor = '#222';
+        this.pointSize = 8;
 
-        this.lineColor = 'cornflowerblue';
-        this.lineWidth = 1;
+        this.lineColor = 'lightblue';
+        this.lineWidth = 2;
 
         this.originPoint = new Point(
             (this.cw / 2),// - (this.pointSize / 2), 
             (this.ch / 2),// - (this.pointSize / 2), 
             0,
-            'red', this.pointSize * 2, context);
-
-        //if (!pointsJson) 
-        {
-
-            if (this.args.curveOnly)
-            {
-                // add straight line
-                this.points = [
-                    new BezierPoint(0, 0, 0, context, this.pointColor, this.pointSize, this.cpDist, false, true),
-                    new BezierPoint(320, 0, 0, context, this.pointColor, this.pointSize, this.cpDist, false, true)
-                ];
-            }
-            else
-            {
-                var offsetX = -20;
-                var offsetY = -20;
-
-                // add square
-                this.points = [
-                    new BezierPoint(offsetX, offsetY, 0, context, this.pointColor, this.pointSize, this.cpDist, false, true),
-                    new BezierPoint(offsetX * -1, offsetY, 0, context, this.pointColor, this.pointSize, this.cpDist, false, true),
-                    new BezierPoint(offsetX * -1, offsetY * -1, 0, context, this.pointColor, this.pointSize, this.cpDist, true, true),
-                    new BezierPoint(offsetX, offsetY * -1, 0, context, this.pointColor, this.pointSize, this.cpDist, true, true),
-                ];
-            }
-            //this.setPointsAttr();
-        }
-        // else {
-        //     this.setPoints(pointsJson);
-        // }
+            'white', this.pointSize, context);
 
         this.events = {};
 
@@ -141,8 +113,32 @@ class Curve {
         this.scaleFactor = 1;
         this.curveEditor.scaleInput.val(1);
         this.undoStack = [];
-        if (block)
-            this.setPoints(block.getValue());
+        this.CloseLoop = !block.args.curveOnly;
+        if (block) {
+            var json = block.getValue();
+            if (json.length > 0) {
+                this.setPoints(json);
+            }
+            else if (this.CloseLoop) {
+                var offsetX = -20;
+                var offsetY = -20;
+
+                // add square
+                this.points = [
+                    new BezierPoint(offsetX, offsetY, 0, this.ctx, this.pointColor, this.pointSize, this.cpDist, false, true),
+                    new BezierPoint(offsetX * -1, offsetY, 0,  this.ctx, this.pointColor, this.pointSize, this.cpDist, false, true),
+                    new BezierPoint(offsetX * -1, offsetY * -1, 0,  this.ctx, this.pointColor, this.pointSize, this.cpDist, true, true),
+                    new BezierPoint(offsetX, offsetY * -1, 0,  this.ctx, this.pointColor, this.pointSize, this.cpDist, true, true),
+                ];
+            }
+            else {
+                // add straight line 
+                this.points = [
+                    new BezierPoint(0, 0, 0,  this.ctx, this.pointColor, this.pointSize, this.cpDist, false, true),
+                    new BezierPoint(320, 0, 0,  this.ctx, this.pointColor, this.pointSize, this.cpDist, false, true)
+                ];
+            }
+        }
     }
 
     setPoints(pointsJson: string) {
@@ -290,7 +286,7 @@ class Curve {
         return point;
     };
 
-    setPointStyle(color: any, size: number) {
+    /*setPointStyle(color: any, size: number) {
 
         for (var i = 0; i < this.points.length; i++) {
             this.points[i].setPointStyle(color, size);
@@ -313,7 +309,7 @@ class Curve {
         this.CloseLoop = close;
         this.draw();
         this.setPointsAttr();
-    }
+    }*/
 
     MarkerNameOnChange(value: string) {
         if (this.ActivePoint) {
@@ -352,7 +348,7 @@ class Curve {
         var curWidth = parseInt(this.ctx.canvas.style.width) || this.ctx.canvas.width;
         var curHeight = parseInt(this.ctx.canvas.style.height) || this.ctx.canvas.height;
         
-        var sx = curWidth / this.cw;
+        /*var sx = curWidth / this.cw;
         var sy = curHeight / this.ch;
 
         for (var i = 0; i < this.points.length; i++) {
@@ -361,17 +357,17 @@ class Curve {
             p.position[this.c2] *= sy;
             p.cp1[this.c1] *= sx;
             p.cp1[this.c2] *= sy;
-            p.cp2[this.c1] *= sx;
+            p.cp2[this.c1] *= sx; 
             p.cp2[this.c2] *= sy;
-        }
+        }*/
 
         this.cw = this.ctx.canvas.width = curWidth;
         this.ch = this.ctx.canvas.height = curHeight;
 
-        this.originPoint[this.c1]  = (this.cw / 2);
-        this.originPoint[this.c2]  = (this.ch / 2);
+        //this.originPoint[this.c1]  = (this.cw / 2);
+        //this.originPoint[this.c2]  = (this.ch / 2);
 
-        this.draw();
+        this.draw(); 
     }
 
     set2dView(c1: string, c2: string) {
@@ -388,67 +384,78 @@ class Curve {
 
         // Grid
 
-        this.ctx.strokeStyle = '#444';
+        this.ctx.strokeStyle = 'white';
         this.ctx.lineWidth = 0.5;
 
-        // get col offset, so always lines up with origin
-        var colCount = this.cw / this.gridCellSize;
-        var halfColCount = colCount / 2;
-        var colRem = halfColCount % Math.floor(halfColCount);
-        var gridColOffsetX = -(this.gridCellSize - (colRem * this.gridCellSize));
+        {
+            // get col offset, so always lines up with origin
+            var colsUpToOrigin = this.originPoint[this.c1] / this.gridCellSize;
+            var fullColsUpToOrigin = Math.ceil(colsUpToOrigin) * this.gridCellSize;
+            this.gridColOffsetX =  this.originPoint[this.c1] - fullColsUpToOrigin;
 
-        // get row offset, so always lines up with origin
-        var rowCount = this.ch / this.gridCellSize;
-        var halfRowCount = rowCount / 2;
-        var rowRem = halfRowCount % Math.floor(halfRowCount);
-        var gridColOffsetY = -(this.gridCellSize - (rowRem * this.gridCellSize));
+            var rowsUpToOrigin = this.originPoint[this.c2] / this.gridCellSize;
+            var fullRowsUpToOrigin = Math.ceil(rowsUpToOrigin) * this.gridCellSize;
+            this.gridColOffsetY =  this.originPoint[this.c2] - fullRowsUpToOrigin;
 
-        // small column lines
-        for (var x = gridColOffsetX; x < this.cw; x += this.gridCellSize) {
-            this.ctx.beginPath();
-            this.ctx.moveTo(x, 0);
-            this.ctx.lineTo(x, this.ch);
-            this.ctx.stroke();
-        }
+            // small column lines
+            for (var x = this.gridColOffsetX; x < this.cw; x += this.gridCellSize) {
+                this.ctx.beginPath();
+                this.ctx.moveTo(x, 0);
+                this.ctx.lineTo(x, this.ch);
+                this.ctx.stroke();
+            }
 
-        // small row lines
-        for (var y = gridColOffsetY; y < this.ch; y += this.gridCellSize) {
-            this.ctx.beginPath();
-            this.ctx.moveTo(0, y);
-            this.ctx.lineTo(this.cw, y);
-            this.ctx.stroke();
+            // small row lines
+            for (var y = this.gridColOffsetY; y < this.ch; y += this.gridCellSize) {
+                this.ctx.beginPath();
+                this.ctx.moveTo(0, y);
+                this.ctx.lineTo(this.cw, y);
+                this.ctx.stroke();
+            }
         }
 
         this.ctx.lineWidth = 0.6;
 
+        {
+            var cellSize = this.gridCellSize * 4;
 
-        // large column lines
-        for (var x = gridColOffsetX; x < this.cw; x += (this.gridCellSize * 4)) {
-            this.ctx.beginPath();
-            this.ctx.moveTo(x, 0);
-            this.ctx.lineTo(x, this.ch);
-            this.ctx.stroke();
-        }
+            // get col offset, so always lines up with origin
+            var colsUpToOrigin = this.originPoint[this.c1] / cellSize;
+            var fullColsUpToOrigin = Math.ceil(colsUpToOrigin) * cellSize;
+            var largeGridColOffsetX =  this.originPoint[this.c1] - fullColsUpToOrigin;
 
-        // large row lines
-        for (var y = gridColOffsetY; y < this.ch; y += (this.gridCellSize * 4)) {
-            this.ctx.beginPath();
-            this.ctx.moveTo(0, y);
-            this.ctx.lineTo(this.cw, y);
-            this.ctx.stroke();
+            var rowsUpToOrigin = this.originPoint[this.c2] / cellSize;
+            var fullRowsUpToOrigin = Math.ceil(rowsUpToOrigin) * cellSize;
+            var largeGridColOffsetY =  this.originPoint[this.c2] - fullRowsUpToOrigin;
+
+            // large column lines
+            for (var x = largeGridColOffsetX; x < this.cw; x += cellSize) {
+                this.ctx.beginPath();
+                this.ctx.moveTo(x, 0);
+                this.ctx.lineTo(x, this.ch);
+                this.ctx.stroke();
+            }
+
+            // large row lines
+            for (var y = largeGridColOffsetY; y < this.ch; y += cellSize) {
+                this.ctx.beginPath();
+                this.ctx.moveTo(0, y);
+                this.ctx.lineTo(this.cw, y);
+                this.ctx.stroke();
+            }
         }
 
         // axis lines
         this.ctx.lineWidth = 0.8;
         // X
         this.ctx.beginPath();
-        this.ctx.moveTo(0, this.ch / 2);
-        this.ctx.lineTo(this.cw, this.ch / 2);
+        this.ctx.moveTo(0, this.originPoint[this.c2]);
+        this.ctx.lineTo(this.cw, this.originPoint[this.c2]);
         this.ctx.stroke();
         // Y
         this.ctx.beginPath();
-        this.ctx.moveTo(this.cw / 2, 0);
-        this.ctx.lineTo(this.cw / 2, this.ch);
+        this.ctx.moveTo(this.originPoint[this.c1], 0);
+        this.ctx.lineTo(this.originPoint[this.c1], this.ch);
         this.ctx.stroke();
 
         // origin
@@ -605,7 +612,8 @@ class Curve {
             nearestPointDist: number,
             hoverPoint: BezierPoint,
             dragCP: string,
-            isDragging: boolean;
+            isDragging: boolean,
+            draggingOrigin: boolean;
 
         var curve: Curve = this;
 
@@ -670,26 +678,68 @@ class Curve {
 
         this.ctx.canvas.addEventListener('mousemove', function (evt: any) {
 
+            var gridScaleFunc = function(x, y) {
+                return {
+                    x: (Math.round((x) / curve.gridCellSize) * curve.gridCellSize), //+ curve.gridColOffsetX,
+                    y: (Math.round((y) / curve.gridCellSize) * curve.gridCellSize) //+ curve.gridColOffsetY
+                };
+            };
+            
+            var removeMouseOffsetFunc = function(x, y) {
+                return {
+                    x: x - mDownOffsetX,
+                    y: y - mDownOffsetY
+                };
+            };
+
             var bbox = this.getBoundingClientRect();
 
-            x = evt.clientX - bbox.left - curve.originPoint[curve.c1];
-            y = evt.clientY - bbox.top -  curve.originPoint[curve.c2];
+            x = evt.clientX - bbox.left;
+            y = evt.clientY - bbox.top;
 
-            curve.mouseX = x - curve.originPoint[curve.c1];
-            curve.mouseY = (y - curve.originPoint[curve.c2]) * -1;
-
-            if (isDragging) {
-                x -= mDownOffsetX;
-                y -= mDownOffsetY;
-                curve.mousedrag(evt, x, y, dragCP);
-                hasDragged = true;
+            if (isDragging && curve.selectedLine != null) {
+                x -= curve.originPoint[curve.c1];
+                y -= curve.originPoint[curve.c2];
+                curve.selectedLine.setCoordsFromRelativeXY(curve.c1, curve.c2, x, y, curve.shiftKeyDown ? gridScaleFunc : removeMouseOffsetFunc);
+                curve.draw();
             }
             else {
-                setNearestPoint();
+                if (curve.shiftKeyDown) {
+                    var scaled = gridScaleFunc(x, y);
+                    x = scaled.x  + curve.gridColOffsetX;
+                    y = scaled.y + curve.gridColOffsetY;
+                }
+                else if (isDragging) {
+                    x -= mDownOffsetX;
+                    y -= mDownOffsetY;
+                }
+
+                curve.mouseX = x - curve.originPoint[curve.c1];
+                curve.mouseY = (y - curve.originPoint[curve.c2]) * -1;
+
+                if (draggingOrigin) {
+                    curve.originPoint[curve.c1] = x;
+                    curve.originPoint[curve.c2] = y;
+                    hasDragged = true;
+                    curve.draw();
+                }
+                else {
+
+                    x -= curve.originPoint[curve.c1];
+                    y -= curve.originPoint[curve.c2];
+
+                    if (isDragging) {
+                        curve.mousedrag(evt, x, y, dragCP);
+                        hasDragged = true;
+                    }
+                    else {
+                        setNearestPoint();
+                    }
+                }
             }
 
-            // ?? grid thing ??
-            if (curve.altKeyDown) {
+            // grid line up
+            /*if (curve.altKeyDown) {
                 var deltaW = curve.cw / 20;
                 var deltaH = curve.ch / 10;
 
@@ -698,7 +748,7 @@ class Curve {
 
                 x = deltaW * posX;
                 y = deltaH * posY;
-            }
+            }*/
 
             // raise event
             if (curve.events.onmousemove != null)
@@ -759,9 +809,16 @@ class Curve {
                 }
             }
 
-            if (isDragging)
-                beforeDragJson = curve.getPointsJson();
+            // drag origin point
+            if (!isDragging) {
+                
+                mDownOffsetX = x;// + curve.originPoint[curve.c1];
+                mDownOffsetY = y;// + curve.originPoint[curve.c2];
+                draggingOrigin = true;
+                isDragging=true;
+            }
 
+            beforeDragJson = curve.getPointsJson();
             curve.draw();
         });
 
@@ -772,6 +829,7 @@ class Curve {
 
             dragCP = null;
             isDragging = false;
+            draggingOrigin = false;
             hasDragged = false;
         });
 
@@ -781,9 +839,12 @@ class Curve {
                     curve.pushUndoJson(beforeDragJson);
 
                 // dont let point get dragged outside canvas where we can't see it
-                curve.ActivePoint.SetPointOnCanvasBorder(curve.c1, curve.c2, evt, dragCP, curve.cw, curve.ch, curve.shiftKeyDown, x, y);
+                if (!draggingOrigin)
+                    curve.ActivePoint.SetPointOnCanvasBorder(curve.c1, curve.c2, evt, dragCP, curve.cw, curve.ch, curve.shiftKeyDown, x, y);
+
                 dragCP = null;
                 isDragging = false;
+                draggingOrigin = false;
             }
         });
 
@@ -845,15 +906,7 @@ class Curve {
 
     mousedrag(evt: any, x: number, y: number, dragCP: string) {
 
-        if (this.shiftKeyDown) {
-            x = Math.round((x) / this.gridCellSize) * this.gridCellSize;
-            y = Math.round((y) / this.gridCellSize) * this.gridCellSize;
-        }
-
-        if (this.selectedLine != null) {
-            this.selectedLine.setCoordsFromRelativeXY(this.c1, this.c2, x, y);
-        }
-        else if (dragCP == 'cp1') {
+        if (dragCP == 'cp1') {
             this.ActivePoint.cp1[this.c1] = x;
             this.ActivePoint.cp1[this.c2] = y;
 

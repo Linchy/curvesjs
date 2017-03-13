@@ -34,12 +34,25 @@ class Line {
         this.EndPoint.pushRelativeControlPoints(c1, c2);
     }
 
-    setCoordsFromRelativeXY(c1: string, c2: string, x: number, y: number) {
-        this.StartPoint.position[c1] = this.relativeStartPos.x + x;
-        this.StartPoint.position[c2] = this.relativeStartPos.y + y;
+    setCoordsFromRelativeXY(c1: string, c2: string, x: number, y: number, gridScaleFunc?: Function) {
+        var start =  this.StartPoint.position;
+        var end   =  this.EndPoint.position;
 
-        this.EndPoint.position[c1] = this.relativeEndPos.x + x;
-        this.EndPoint.position[c2] = this.relativeEndPos.y + y;
+        start[c1] = this.relativeStartPos.x + x;
+        start[c2] = this.relativeStartPos.y + y;
+
+        end[c1] = this.relativeEndPos.x + x;
+        end[c2] = this.relativeEndPos.y + y;
+
+        if (gridScaleFunc) {
+            var startScale = gridScaleFunc(start[c1], start[c2]);
+            start[c1] = startScale.x;
+            start[c2] = startScale.y;
+
+            var endScale = gridScaleFunc(end[c1], end[c2]);
+            end[c1] = endScale.x;
+            end[c2] = endScale.y;
+        }
 
         this.StartPoint.popRelativeControlPoints(c1, c2);
         this.EndPoint.popRelativeControlPoints(c1, c2);

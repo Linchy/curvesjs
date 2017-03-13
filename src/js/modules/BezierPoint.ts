@@ -39,7 +39,7 @@ class BezierPoint {
 
 		this.position = new Point(x, y, z, this.color, this.size, context);
 		this.cp1 = new Point(x + ((reverseCpX ? 1 : -1) * this.cpDist), y, z, 'red', this.size, context);
-		this.cp2 = new Point(x + ((reverseCpX ? -1 : 1) * this.cpDist), y, z, 'blue', this.size, context);
+		this.cp2 = new Point(x + ((reverseCpX ? -1 : 1) * this.cpDist), y, z, 'lightgreen', this.size, context);
 
 		this.ctx = context;
 		this.r = 2;
@@ -126,7 +126,7 @@ class BezierPoint {
 
 		// draw points
 
-		this.position.color = (this.active ? 'orange' : (this.isSurfacePoint ? 'darkred' : 'black'));
+		this.position.color = (this.active ? 'orange' : (this.isSurfacePoint ? 'blue' : 'blue'));
 		this.position.draw(c1, c2, origin1, origin2);
 
 		if (this.active) {
