@@ -9,6 +9,7 @@ var Curve = (function () {
         this.gridCellSize = 20;
         this.scaleFactor = 1;
         this.origScaleFactor = 1;
+        this.ReverseBones = false;
         // the two coordinates to show on render
         this.c1 = 'x';
         this.c2 = 'y';
@@ -86,6 +87,8 @@ var Curve = (function () {
         this.points = [];
         var dataObj = JSON.parse(pointsJson);
         this.CloseLoop = dataObj.closeLoop;
+        this.ReverseBones = dataObj.reverseBones ? dataObj.reverseBones : false;
+        this.curveEditor.reverseBonesCheckbox.prop("checked", this.ReverseBones);
         var jsonOrigin = dataObj.origin;
         if (!jsonOrigin.z)
             jsonOrigin.z = 0;
@@ -99,10 +102,10 @@ var Curve = (function () {
             point.cp2.z = dataObj.points[i].cp2Z || 0;
             if (dataObj.points[i].markerData)
                 point.markerData = dataObj.points[i].markerData.join(';');
-            if (dataObj.points[i].isUVSeam)
-                point.isUVSeamInput = dataObj.points[i].isUVSeam;
             if (dataObj.points[i].uvName)
                 point.uvNameInput = dataObj.points[i].uvName;
+            if (dataObj.points[i].boneName)
+                point.boneNameInput = dataObj.points[i].boneName;
             // move surface so its origin is in center of canvas
             if (jsonOrigin != null) {
                 point.SubtractPoint(jsonOrigin);
@@ -129,12 +132,13 @@ var Curve = (function () {
                 cp2Z: unscaleFunc(point.cp2.z),
                 isSurfacePoint: point.isSurfacePoint,
                 markerData: point.markerData.split(';'),
-                isUVSeam: point.isUVSeamInput,
-                uvName: point.uvNameInput
+                uvName: point.uvNameInput,
+                boneName: point.boneNameInput
             };
         });
         var dataObj = {
             closeLoop: this.CloseLoop,
+            reverseBones: this.ReverseBones,
             origin: { x: 0, y: 0, z: 0 },
             //origin: { x: this.originPoint.x, y: this.originPoint.y, z: this.originPoint.z },
             points: pointMap
@@ -165,8 +169,8 @@ var Curve = (function () {
         if (this.ActivePoint) {
             this.ActivePoint.active = true;
             this.curveEditor.markerNameInput.val(this.ActivePoint.markerData);
-            this.curveEditor.isUVSeamInput.prop('checked', this.ActivePoint.isUVSeamInput);
             this.curveEditor.uvNameInput.val(this.ActivePoint.uvNameInput);
+            this.curveEditor.boneNameInput.val(this.ActivePoint.boneNameInput);
             this.events.onselectpoint();
         }
         else
@@ -220,19 +224,26 @@ var Curve = (function () {
         if (this.ActivePoint) {
             this.ActivePoint.markerData = value;
             this.setPointsAttr();
+            this.events.ondrag(); // raise event so json is sent to c#
         }
     };
-    Curve.prototype.isUVSeamOnChange = function (value) {
-        if (this.ActivePoint) {
-            this.pushUndoJson();
-            this.ActivePoint.isUVSeamInput = value;
-            this.setPointsAttr();
-        }
+    Curve.prototype.reverseBonesOnChange = function (value) {
+        //this.pushUndoJson();
+        this.ReverseBones = value;
+        this.setPointsAttr();
     };
     Curve.prototype.UVNameOnChange = function (value) {
         if (this.ActivePoint) {
             this.ActivePoint.uvNameInput = value;
             this.setPointsAttr();
+            this.events.ondrag(); // raise event so json is sent to c#
+        }
+    };
+    Curve.prototype.BoneNameOnChange = function (value) {
+        if (this.ActivePoint) {
+            this.ActivePoint.boneNameInput = value;
+            this.setPointsAttr();
+            this.events.ondrag(); // raise event so json is sent to c#
         }
     };
     Curve.prototype.SetScale = function (newScaleStr) {
@@ -505,13 +516,15 @@ var Curve = (function () {
                 x -= curve.originPoint[curve.c1];
                 y -= curve.originPoint[curve.c2];
                 curve.selectedLine.setCoordsFromRelativeXY(curve.c1, curve.c2, x, y, curve.shiftKeyDown ? gridScaleFunc : removeMouseOffsetFunc);
+                curve.setPointsAttr();
+                if (curve.events.ondrag != null)
+                    curve.events.ondrag();
                 curve.draw();
             }
             else {
                 if (curve.shiftKeyDown) {
-                    var scaled = gridScaleFunc(x, y);
-                    x = scaled.x + curve.gridColOffsetX;
-                    y = scaled.y + curve.gridColOffsetY;
+                    x = (Math.round((x) / curve.gridCellSize) * curve.gridCellSize) + curve.gridColOffsetX;
+                    y = (Math.round((y) / curve.gridCellSize) * curve.gridCellSize) + curve.gridColOffsetY;
                 }
                 else if (isDragging) {
                     x -= mDownOffsetX;

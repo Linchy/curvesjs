@@ -44,6 +44,8 @@ class Curve {
     mouseX: number;
     mouseY: number;
 
+    ReverseBones: boolean = false;
+
     curveEditor: any;
  
     // selected blockly block
@@ -153,6 +155,9 @@ class Curve {
         var dataObj = JSON.parse(pointsJson);
         this.CloseLoop = dataObj.closeLoop;
 
+        this.ReverseBones = dataObj.reverseBones ? dataObj.reverseBones : false;
+        this.curveEditor.reverseBonesCheckbox.prop("checked", this.ReverseBones);
+
         var jsonOrigin = dataObj.origin;
         if (!jsonOrigin.z)
             jsonOrigin.z = 0;
@@ -167,10 +172,10 @@ class Curve {
             point.cp2.z = dataObj.points[i].cp2Z || 0;
             if (dataObj.points[i].markerData)
                 point.markerData = dataObj.points[i].markerData.join(';');
-            if (dataObj.points[i].isUVSeam)
-                point.isUVSeamInput = dataObj.points[i].isUVSeam;
             if (dataObj.points[i].uvName)
                 point.uvNameInput = dataObj.points[i].uvName;
+            if (dataObj.points[i].boneName)
+                point.boneNameInput = dataObj.points[i].boneName;
 
             // move surface so its origin is in center of canvas
             if (jsonOrigin != null) {
@@ -206,13 +211,14 @@ class Curve {
 
                 isSurfacePoint: point.isSurfacePoint,
                 markerData: point.markerData.split(';'),
-                isUVSeam: point.isUVSeamInput,
-                uvName: point.uvNameInput
+                uvName: point.uvNameInput,
+                boneName: point.boneNameInput 
             };
         });
 
         var dataObj: any = {
             closeLoop: this.CloseLoop,
+            reverseBones: this.ReverseBones,
             origin: { x: 0, y: 0, z: 0 },
             //origin: { x: this.originPoint.x, y: this.originPoint.y, z: this.originPoint.z },
             points: pointMap 
@@ -251,8 +257,8 @@ class Curve {
         {
             this.ActivePoint.active = true;
             this.curveEditor.markerNameInput.val(this.ActivePoint.markerData);
-            this.curveEditor.isUVSeamInput.prop('checked', this.ActivePoint.isUVSeamInput);
             this.curveEditor.uvNameInput.val(this.ActivePoint.uvNameInput);
+            this.curveEditor.boneNameInput.val(this.ActivePoint.boneNameInput);
             this.events.onselectpoint();
         }
         else
@@ -315,21 +321,29 @@ class Curve {
         if (this.ActivePoint) {
             this.ActivePoint.markerData = value;
             this.setPointsAttr();
+            this.events.ondrag(); // raise event so json is sent to c#
         }
     }
 
-    isUVSeamOnChange(value: boolean) {
-        if (this.ActivePoint) {
-            this.pushUndoJson();
-            this.ActivePoint.isUVSeamInput = value;
-            this.setPointsAttr();
-        }
+    reverseBonesOnChange(value: boolean) {
+        //this.pushUndoJson();
+        this.ReverseBones = value;
+        this.setPointsAttr();
     }
 
     UVNameOnChange(value: string) {
         if (this.ActivePoint) {
             this.ActivePoint.uvNameInput = value;
             this.setPointsAttr();
+            this.events.ondrag(); // raise event so json is sent to c#
+        }
+    }
+
+    BoneNameOnChange(value: string) {
+        if (this.ActivePoint) {
+            this.ActivePoint.boneNameInput = value;
+            this.setPointsAttr();
+            this.events.ondrag(); // raise event so json is sent to c#
         }
     }
 
@@ -701,13 +715,16 @@ class Curve {
                 x -= curve.originPoint[curve.c1];
                 y -= curve.originPoint[curve.c2];
                 curve.selectedLine.setCoordsFromRelativeXY(curve.c1, curve.c2, x, y, curve.shiftKeyDown ? gridScaleFunc : removeMouseOffsetFunc);
+                
+                curve.setPointsAttr();
+                if (curve.events.ondrag != null)
+                    curve.events.ondrag();
                 curve.draw();
             }
             else {
                 if (curve.shiftKeyDown) {
-                    var scaled = gridScaleFunc(x, y);
-                    x = scaled.x  + curve.gridColOffsetX;
-                    y = scaled.y + curve.gridColOffsetY;
+                    x = (Math.round((x) / curve.gridCellSize) * curve.gridCellSize)  + curve.gridColOffsetX;
+                    y = (Math.round((y) / curve.gridCellSize) * curve.gridCellSize)  + curve.gridColOffsetY;
                 }
                 else if (isDragging) {
                     x -= mDownOffsetX;

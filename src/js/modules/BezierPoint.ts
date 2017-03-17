@@ -25,8 +25,8 @@ class BezierPoint {
 	v2y: number;
 
 	markerData: string;
-	isUVSeamInput: boolean;
 	uvNameInput: string;
+	boneNameInput: string;
 
 	constructor(x: number, y: number, z: number, context: any, color: any, size: number, cpDist: number, reverseCpX?: boolean, isSurfacePoint?: boolean) {
 
@@ -49,8 +49,8 @@ class BezierPoint {
 		//this.collapsed = false;
 
 		this.markerData = "";
-		this.isUVSeamInput = false;
 		this.uvNameInput = "";
+		this.boneNameInput = "";
 	}
 
 	SubtractPoint(point: any) {
