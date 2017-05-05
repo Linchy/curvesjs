@@ -116,6 +116,7 @@ class Curve {
         this.curveEditor.scaleInput.val(1);
         this.undoStack = [];
         this.CloseLoop = !block.args.curveOnly;
+        
         if (block) {
             var json = block.getValue();
             if (json.length > 0) {
@@ -128,9 +129,9 @@ class Curve {
                 // add square
                 this.points = [
                     new BezierPoint(offsetX, offsetY, 0, this.ctx, this.pointColor, this.pointSize, this.cpDist, false, true),
-                    new BezierPoint(offsetX * -1, offsetY, 0,  this.ctx, this.pointColor, this.pointSize, this.cpDist, false, true),
-                    new BezierPoint(offsetX * -1, offsetY * -1, 0,  this.ctx, this.pointColor, this.pointSize, this.cpDist, true, true),
                     new BezierPoint(offsetX, offsetY * -1, 0,  this.ctx, this.pointColor, this.pointSize, this.cpDist, true, true),
+                    new BezierPoint(offsetX * -1, offsetY * -1, 0,  this.ctx, this.pointColor, this.pointSize, this.cpDist, true, true),
+                    new BezierPoint(offsetX * -1, offsetY, 0,  this.ctx, this.pointColor, this.pointSize, this.cpDist, false, true),
                 ];
             }
             else {
@@ -272,21 +273,21 @@ class Curve {
         this.pushUndoJson();
 
         var point = null;
-        if (nearestInfo.realPointIndex) {
+        //if (nearestInfo.realPointIndex) {
             var insertIndex = nearestInfo.realPointIndex;
             point = this.SliceBezier(
                 insertIndex == 0 ? this.points.length - 1 : insertIndex - 1,
                 insertIndex,
                 nearestInfo.t);
-        }
-        else if (!this.args.curveOnly)   // don't allow adding after last point
-        {
-            var px = (this.c1 == 'x' ? x : (this.c2 == 'x' ? y : 0));
-            var py = (this.c1 == 'y' ? x : (this.c2 == 'y' ? y : 0));
-            var pz = (this.c1 == 'z' ? x : (this.c2 == 'z' ? y : 0));
-            point = new BezierPoint(px, py, pz, this.ctx, this.pointColor, this.pointSize, this.cpDist);
-            this.points.push(point);
-        }
+        //} 
+        // else if (!this.args.curveOnly)   // don't allow adding after last point
+        // {
+        //     var px = (this.c1 == 'x' ? x : (this.c2 == 'x' ? y : 0));
+        //     var py = (this.c1 == 'y' ? x : (this.c2 == 'y' ? y : 0));
+        //     var pz = (this.c1 == 'z' ? x : (this.c2 == 'z' ? y : 0));
+        //     point = new BezierPoint(px, py, pz, this.ctx, this.pointColor, this.pointSize, this.cpDist);
+        //     this.points.push(point);
+        // }
 
         this.setPointsAttr();
         return point;
@@ -356,6 +357,21 @@ class Curve {
             this.scaleFactor = newScale;
             this.draw();
         }
+    }
+
+    ReversePoints() {
+        this.points.reverse();
+
+        // need to swap control points too
+        for (var i = 0; i < this.points.length; i++) {
+            var cache = this.points[i].cp1;
+            this.points[i].cp1 = this.points[i].cp2;
+            this.points[i].cp2 = cache;
+        }
+
+        this.draw();
+        this.setPointsAttr();
+        this.events.ondrag(); // raise event so json is sent to c#
     }
 
     onResize() {
@@ -521,7 +537,9 @@ class Curve {
         var lookup: CurveSample[] = [];
 
         //Percent Based Tesselation
-        for (var i = 0; i < this.points.length; i++) {
+        var count = this.points.length - (this.CloseLoop ? 0 : 1);
+
+        for (var i = 0; i < count; i++) {
             var p1 = this.points[i];
             var p2 = this.points[(i + 1) % this.points.length];
 
@@ -731,8 +749,8 @@ class Curve {
                     y -= mDownOffsetY;
                 }
 
-                curve.mouseX = x - curve.originPoint[curve.c1];
-                curve.mouseY = (y - curve.originPoint[curve.c2]) * -1;
+                curve.mouseX = Math.round(x - curve.originPoint[curve.c1]);
+                curve.mouseY = Math.round((y - curve.originPoint[curve.c2]) * -1);
 
                 if (draggingOrigin) {
                     curve.originPoint[curve.c1] = x;
@@ -795,6 +813,7 @@ class Curve {
                 }
                 isDragging = true;
             }
+            // check for line select and drag
             else {
                 curve.setActivePoint(null);
                 mDownOffsetX = 0;
@@ -816,7 +835,11 @@ class Curve {
                         }
                     }
 
-                    if (nearestInfo != null) {
+                    var isInvalid = nearestInfo == null || 
+                                    nearestDist > 25 ||
+                                    (nearestInfo.realPointIndex == 0 && !curve.CloseLoop);
+
+                    if (!isInvalid) {
                         curve.selectedLine = new Line(curve.points,
                             nearestInfo.realPointIndex == 0 ? curve.points.length - 1 : nearestInfo.realPointIndex - 1,
                             nearestInfo.realPointIndex);
@@ -895,6 +918,10 @@ class Curve {
                         nearestInfoIndex = i;
                     }
                 }
+
+                // make sure we are a min away from a line
+                if (nearestDist > 25)
+                    return;
 
                 // insert after point index
                 var newPoint = curve.addPoint(x, y, nearestInfo);

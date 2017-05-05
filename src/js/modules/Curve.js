@@ -65,9 +65,9 @@ var Curve = (function () {
                 // add square
                 this.points = [
                     new BezierPoint(offsetX, offsetY, 0, this.ctx, this.pointColor, this.pointSize, this.cpDist, false, true),
-                    new BezierPoint(offsetX * -1, offsetY, 0, this.ctx, this.pointColor, this.pointSize, this.cpDist, false, true),
-                    new BezierPoint(offsetX * -1, offsetY * -1, 0, this.ctx, this.pointColor, this.pointSize, this.cpDist, true, true),
                     new BezierPoint(offsetX, offsetY * -1, 0, this.ctx, this.pointColor, this.pointSize, this.cpDist, true, true),
+                    new BezierPoint(offsetX * -1, offsetY * -1, 0, this.ctx, this.pointColor, this.pointSize, this.cpDist, true, true),
+                    new BezierPoint(offsetX * -1, offsetY, 0, this.ctx, this.pointColor, this.pointSize, this.cpDist, false, true),
                 ];
             }
             else {
@@ -181,17 +181,18 @@ var Curve = (function () {
     Curve.prototype.addPoint = function (x, y, nearestInfo) {
         this.pushUndoJson();
         var point = null;
-        if (nearestInfo.realPointIndex) {
-            var insertIndex = nearestInfo.realPointIndex;
-            point = this.SliceBezier(insertIndex == 0 ? this.points.length - 1 : insertIndex - 1, insertIndex, nearestInfo.t);
-        }
-        else if (!this.args.curveOnly) {
-            var px = (this.c1 == 'x' ? x : (this.c2 == 'x' ? y : 0));
-            var py = (this.c1 == 'y' ? x : (this.c2 == 'y' ? y : 0));
-            var pz = (this.c1 == 'z' ? x : (this.c2 == 'z' ? y : 0));
-            point = new BezierPoint(px, py, pz, this.ctx, this.pointColor, this.pointSize, this.cpDist);
-            this.points.push(point);
-        }
+        //if (nearestInfo.realPointIndex) {
+        var insertIndex = nearestInfo.realPointIndex;
+        point = this.SliceBezier(insertIndex == 0 ? this.points.length - 1 : insertIndex - 1, insertIndex, nearestInfo.t);
+        //} 
+        // else if (!this.args.curveOnly)   // don't allow adding after last point
+        // {
+        //     var px = (this.c1 == 'x' ? x : (this.c2 == 'x' ? y : 0));
+        //     var py = (this.c1 == 'y' ? x : (this.c2 == 'y' ? y : 0));
+        //     var pz = (this.c1 == 'z' ? x : (this.c2 == 'z' ? y : 0));
+        //     point = new BezierPoint(px, py, pz, this.ctx, this.pointColor, this.pointSize, this.cpDist);
+        //     this.points.push(point);
+        // }
         this.setPointsAttr();
         return point;
     };
@@ -255,6 +256,18 @@ var Curve = (function () {
             this.scaleFactor = newScale;
             this.draw();
         }
+    };
+    Curve.prototype.ReversePoints = function () {
+        this.points.reverse();
+        // need to swap control points too
+        for (var i = 0; i < this.points.length; i++) {
+            var cache = this.points[i].cp1;
+            this.points[i].cp1 = this.points[i].cp2;
+            this.points[i].cp2 = cache;
+        }
+        this.draw();
+        this.setPointsAttr();
+        this.events.ondrag(); // raise event so json is sent to c#
     };
     Curve.prototype.onResize = function () {
         var curWidth = parseInt(this.ctx.canvas.style.width) || this.ctx.canvas.width;
@@ -380,7 +393,8 @@ var Curve = (function () {
     Curve.prototype.createLUT = function () {
         var lookup = [];
         //Percent Based Tesselation
-        for (var i = 0; i < this.points.length; i++) {
+        var count = this.points.length - (this.CloseLoop ? 0 : 1);
+        for (var i = 0; i < count; i++) {
             var p1 = this.points[i];
             var p2 = this.points[(i + 1) % this.points.length];
             var linearDist = p1.position.DistanceToPoint(p2.position);
@@ -530,8 +544,8 @@ var Curve = (function () {
                     x -= mDownOffsetX;
                     y -= mDownOffsetY;
                 }
-                curve.mouseX = x - curve.originPoint[curve.c1];
-                curve.mouseY = (y - curve.originPoint[curve.c2]) * -1;
+                curve.mouseX = Math.round(x - curve.originPoint[curve.c1]);
+                curve.mouseY = Math.round((y - curve.originPoint[curve.c2]) * -1);
                 if (draggingOrigin) {
                     curve.originPoint[curve.c1] = x;
                     curve.originPoint[curve.c2] = y;
@@ -602,7 +616,10 @@ var Curve = (function () {
                             nearestDist = dist;
                         }
                     }
-                    if (nearestInfo != null) {
+                    var isInvalid = nearestInfo == null ||
+                        nearestDist > 25 ||
+                        (nearestInfo.realPointIndex == 0 && !curve.CloseLoop);
+                    if (!isInvalid) {
                         curve.selectedLine = new Line(curve.points, nearestInfo.realPointIndex == 0 ? curve.points.length - 1 : nearestInfo.realPointIndex - 1, nearestInfo.realPointIndex);
                         curve.selectedLine.getRelativeCoordFromToXY(curve.c1, curve.c2, x, y);
                         isDragging = true;
@@ -666,6 +683,9 @@ var Curve = (function () {
                         nearestInfoIndex = i;
                     }
                 }
+                // make sure we are a min away from a line
+                if (nearestDist > 25)
+                    return;
                 // insert after point index
                 var newPoint = curve.addPoint(x, y, nearestInfo);
                 curve.setActivePoint(newPoint);
