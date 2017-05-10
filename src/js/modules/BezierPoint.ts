@@ -106,6 +106,63 @@ class BezierPoint {
 		this.cp2.SetScale(prevScale, newScale);
 	}
 
+	UpdatePosition(c1: string, c2: string, p1: number, p2: number) {
+		if (this.position[c1] == p1 && this.position[c2] == p2) {
+			return false;
+		}
+		else {
+			
+            this.pushRelativeControlPoints(c1, c2);
+
+            this.position[c1] = p1;
+            this.position[c2] = p2;
+
+            this.cp1[c1] = this.position[c1] + this.v1x;
+            this.cp1[c2] = this.position[c2] + this.v1y;
+
+            this.cp2[c1] = this.position[c1] + this.v2x;
+            this.cp2[c2] = this.position[c2] + this.v2y;
+
+			return true;
+		}
+	}
+
+	UpdateCP1Position(c1: string, c2: string, p1: number, p2: number) {
+		if (this.cp1[c1] == p1 && this.cp1[c2] == p2) {
+			return false;
+		}
+		else {
+			this.cp1[c1] = p1;
+			this.cp1[c2] = p2;
+
+			this.pushRelativeControlPoints(c1, c2);
+
+			// make other control point follow
+			this.cp2[c1] = p1 - this.v1x * 2;
+			this.cp2[c2] = p2 - this.v1y * 2;
+
+			return true;
+		}
+	}
+
+	UpdateCP2Position(c1: string, c2: string, p1: number, p2: number) {
+		if (this.cp2[c1] == p1 && this.cp2[c2] == p2) {
+			return false;
+		}
+		else {
+			this.cp2[c1] = p1;
+			this.cp2[c2] = p2;
+
+			this.pushRelativeControlPoints(c1, c2);
+
+			// make other control point follow
+			this.cp1[c1] = p1 - this.v2x * 2;
+			this.cp1[c2] = p2 - this.v2y * 2;
+
+			return true;
+		}
+	}
+
 	draw(c1: string, c2: string, origin1: number, origin2: number) {
 
 		this.ctx.lineWidth = 0.2;

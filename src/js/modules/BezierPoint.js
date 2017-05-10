@@ -60,6 +60,49 @@ var BezierPoint = (function () {
         this.cp1.SetScale(prevScale, newScale);
         this.cp2.SetScale(prevScale, newScale);
     };
+    BezierPoint.prototype.UpdatePosition = function (c1, c2, p1, p2) {
+        if (this.position[c1] == p1 && this.position[c2] == p2) {
+            return false;
+        }
+        else {
+            this.pushRelativeControlPoints(c1, c2);
+            this.position[c1] = p1;
+            this.position[c2] = p2;
+            this.cp1[c1] = this.position[c1] + this.v1x;
+            this.cp1[c2] = this.position[c2] + this.v1y;
+            this.cp2[c1] = this.position[c1] + this.v2x;
+            this.cp2[c2] = this.position[c2] + this.v2y;
+            return true;
+        }
+    };
+    BezierPoint.prototype.UpdateCP1Position = function (c1, c2, p1, p2) {
+        if (this.cp1[c1] == p1 && this.cp1[c2] == p2) {
+            return false;
+        }
+        else {
+            this.cp1[c1] = p1;
+            this.cp1[c2] = p2;
+            this.pushRelativeControlPoints(c1, c2);
+            // make other control point follow
+            this.cp2[c1] = p1 - this.v1x * 2;
+            this.cp2[c2] = p2 - this.v1y * 2;
+            return true;
+        }
+    };
+    BezierPoint.prototype.UpdateCP2Position = function (c1, c2, p1, p2) {
+        if (this.cp2[c1] == p1 && this.cp2[c2] == p2) {
+            return false;
+        }
+        else {
+            this.cp2[c1] = p1;
+            this.cp2[c2] = p2;
+            this.pushRelativeControlPoints(c1, c2);
+            // make other control point follow
+            this.cp1[c1] = p1 - this.v2x * 2;
+            this.cp1[c2] = p2 - this.v2y * 2;
+            return true;
+        }
+    };
     BezierPoint.prototype.draw = function (c1, c2, origin1, origin2) {
         this.ctx.lineWidth = 0.2;
         // draw lines to control points

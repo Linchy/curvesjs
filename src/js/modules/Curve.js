@@ -225,7 +225,7 @@ var Curve = (function () {
         if (this.ActivePoint) {
             this.ActivePoint.markerData = value;
             this.setPointsAttr();
-            this.events.ondrag(); // raise event so json is sent to c#
+            this.events.onPointDataChanged(); // raise event so json is sent to c#
         }
     };
     Curve.prototype.reverseBonesOnChange = function (value) {
@@ -237,14 +237,14 @@ var Curve = (function () {
         if (this.ActivePoint) {
             this.ActivePoint.uvNameInput = value;
             this.setPointsAttr();
-            this.events.ondrag(); // raise event so json is sent to c#
+            this.events.onPointDataChanged(); // raise event so json is sent to c#
         }
     };
     Curve.prototype.BoneNameOnChange = function (value) {
         if (this.ActivePoint) {
             this.ActivePoint.boneNameInput = value;
             this.setPointsAttr();
-            this.events.ondrag(); // raise event so json is sent to c#
+            this.events.onPointDataChanged(); // raise event so json is sent to c#
         }
     };
     Curve.prototype.SetScale = function (newScaleStr) {
@@ -267,7 +267,7 @@ var Curve = (function () {
         }
         this.draw();
         this.setPointsAttr();
-        this.events.ondrag(); // raise event so json is sent to c#
+        this.events.onPointDataChanged(); // raise event so json is sent to c#
     };
     Curve.prototype.onResize = function () {
         var curWidth = parseInt(this.ctx.canvas.style.width) || this.ctx.canvas.width;
@@ -327,7 +327,7 @@ var Curve = (function () {
         }
         this.ctx.lineWidth = 0.6;
         {
-            var cellSize = this.gridCellSize * 4;
+            var cellSize = this.gridCellSize * 5;
             // get col offset, so always lines up with origin
             var colsUpToOrigin = this.originPoint[this.c1] / cellSize;
             var fullColsUpToOrigin = Math.ceil(colsUpToOrigin) * cellSize;
@@ -531,8 +531,8 @@ var Curve = (function () {
                 y -= curve.originPoint[curve.c2];
                 curve.selectedLine.setCoordsFromRelativeXY(curve.c1, curve.c2, x, y, curve.shiftKeyDown ? gridScaleFunc : removeMouseOffsetFunc);
                 curve.setPointsAttr();
-                if (curve.events.ondrag != null)
-                    curve.events.ondrag();
+                if (curve.events.ondrag1 != null)
+                    curve.events.ondrag1();
                 curve.draw();
             }
             else {
@@ -699,6 +699,7 @@ var Curve = (function () {
                 curve.points.splice(nearestPointIndex, 1);
                 this.style.cursor = 'initial';
                 // raise event
+                curve.setPointsAttr();
                 if (curve.events.onremovepoint != null)
                     curve.events.onremovepoint();
             }
@@ -706,45 +707,26 @@ var Curve = (function () {
         });
     };
     Curve.prototype.mousedrag = function (evt, x, y, dragCP) {
+        var handledDrag = false;
         if (dragCP == 'cp1') {
-            this.ActivePoint.cp1[this.c1] = x;
-            this.ActivePoint.cp1[this.c2] = y;
-            this.ActivePoint.pushRelativeControlPoints(this.c1, this.c2);
-            // make other control point follow
-            // if (!this.shiftKeyDown) {
-            this.ActivePoint.cp2[this.c1] = x - this.ActivePoint.v1x * 2;
-            this.ActivePoint.cp2[this.c2] = y - this.ActivePoint.v1y * 2;
+            if (this.ActivePoint.UpdateCP1Position(this.c1, this.c2, x, y))
+                handledDrag = true;
         }
         else if (dragCP == 'cp2') {
-            this.ActivePoint.cp2[this.c1] = x;
-            this.ActivePoint.cp2[this.c2] = y;
-            this.ActivePoint.pushRelativeControlPoints(this.c1, this.c2);
-            // make other control point follow
-            // if (!this.shiftKeyDown) {
-            this.ActivePoint.cp1[this.c1] = x - this.ActivePoint.v2x * 2;
-            this.ActivePoint.cp1[this.c2] = y - this.ActivePoint.v2y * 2;
+            if (this.ActivePoint.UpdateCP2Position(this.c1, this.c2, x, y))
+                handledDrag = true;
         }
         else {
-            this.ActivePoint.pushRelativeControlPoints(this.c1, this.c2);
-            this.ActivePoint.position[this.c1] = x;
-            this.ActivePoint.position[this.c2] = y;
-            // keep first and last point on sides
-            /*if (this.ActivePointIndex === 0) {
-                this.ActivePoint.position.x = 0;
-            }
-            if (this.ActivePointIndex == this.points.length-1) {
-                this.ActivePoint.position.x = this.cw;
-            }*/
-            this.ActivePoint.cp1[this.c1] = this.ActivePoint.position[this.c1] + this.ActivePoint.v1x;
-            this.ActivePoint.cp1[this.c2] = this.ActivePoint.position[this.c2] + this.ActivePoint.v1y;
-            this.ActivePoint.cp2[this.c1] = this.ActivePoint.position[this.c1] + this.ActivePoint.v2x;
-            this.ActivePoint.cp2[this.c2] = this.ActivePoint.position[this.c2] + this.ActivePoint.v2y;
+            if (this.ActivePoint.UpdatePosition(this.c1, this.c2, x, y))
+                handledDrag = true;
         }
-        this.setPointsAttr();
-        // raise event
-        if (this.events.ondrag != null)
-            this.events.ondrag();
-        this.draw();
+        if (handledDrag) {
+            this.setPointsAttr();
+            // raise event
+            if (this.events.ondrag2 != null)
+                this.events.ondrag2();
+            this.draw();
+        }
     };
     ;
     Curve.prototype.pushUndoJson = function (json) {
