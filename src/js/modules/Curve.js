@@ -2,7 +2,7 @@ var Curve = (function () {
     function Curve(context, //htmlParent: HTMLElement, pointsJson: string, args: any, 
         curveEditor) {
         this.shiftKeyDown = false; // 16
-        //var ctrlKeyDown: boolean = false; // 17
+        this.ctrlKeyDown = false; // 17
         this.altKeyDown = false; // 18
         this.ActivePoint = null;
         this.CloseLoop = true;
@@ -36,12 +36,12 @@ var Curve = (function () {
         var self = this;
         window.addEventListener('keydown', function (e) {
             self.shiftKeyDown = e.shiftKey;
-            //self.ctrlKeyDown = e.ctrlKey;
+            self.ctrlKeyDown = e.ctrlKey;
             self.altKeyDown = e.altKey;
         });
         window.addEventListener('keyup', function (e) {
             self.shiftKeyDown = e.shiftKey;
-            //self.ctrlKeyDown = e.ctrlKey;
+            self.ctrlKeyDown = e.ctrlKey;
             self.altKeyDown = e.altKey;
             // undo
             if (e.ctrlKey && e.key.toLowerCase() == "z")
@@ -494,6 +494,9 @@ var Curve = (function () {
             hoverPoint = null;
             dragCP = null;
             isDragging = false;
+            // if holding down ctrl, we select the nearest point,
+            // and ignore control points
+            var enableHoverSelect = curve.ctrlKeyDown;
             for (var i = 0; i < curve.points.length; i++) {
                 var p = curve.points[i];
                 var dist = p.position.DistanceToXY(curve.c1, curve.c2, x, y);
@@ -504,7 +507,7 @@ var Curve = (function () {
                     dragCP = null;
                 }
                 // check control points
-                if (p.active) {
+                if (p.active && !enableHoverSelect) {
                     // cp1
                     dist = p.cp1.DistanceToXY(curve.c1, curve.c2, x, y);
                     if (dist < nearestPointDist) {
@@ -527,6 +530,9 @@ var Curve = (function () {
                 var minDist = curve.pointSize / 2 + 2;
                 if (nearestPointDist <= minDist)
                     hoverPoint = nearestPoint;
+                if (enableHoverSelect) {
+                    curve.setActivePoint(nearestPoint);
+                }
                 curve.ctx.canvas.style.cursor = 'pointer';
             }
             else {

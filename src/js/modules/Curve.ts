@@ -25,7 +25,7 @@ class Curve {
     points: BezierPoint[];
 
     shiftKeyDown: boolean = false; // 16
-    //var ctrlKeyDown: boolean = false; // 17
+    ctrlKeyDown: boolean = false; // 17
     altKeyDown: boolean = false; // 18
 
     ActivePoint: BezierPoint = null;
@@ -95,13 +95,13 @@ class Curve {
 
         window.addEventListener('keydown', function (e) {
             self.shiftKeyDown = e.shiftKey;
-            //self.ctrlKeyDown = e.ctrlKey;
+            self.ctrlKeyDown = e.ctrlKey;
             self.altKeyDown = e.altKey;
         });
 
         window.addEventListener('keyup', function (e) {
             self.shiftKeyDown = e.shiftKey;
-            //self.ctrlKeyDown = e.ctrlKey;
+            self.ctrlKeyDown = e.ctrlKey;
             self.altKeyDown = e.altKey;
 
             // undo
@@ -686,6 +686,10 @@ class Curve {
             dragCP = null;
             isDragging = false;
 
+            // if holding down ctrl, we select the nearest point,
+            // and ignore control points
+            var enableHoverSelect = curve.ctrlKeyDown;
+
             for (var i = 0; i < curve.points.length; i++) {
                 var p = curve.points[i];
                 var dist = p.position.DistanceToXY(curve.c1, curve.c2, x, y);
@@ -698,7 +702,7 @@ class Curve {
                 }
 
                 // check control points
-                if (p.active) {
+                if (p.active && !enableHoverSelect) {
                     // cp1
                     dist = p.cp1.DistanceToXY(curve.c1, curve.c2, x, y);
                     if (dist < nearestPointDist) {
@@ -724,6 +728,10 @@ class Curve {
                 var minDist = curve.pointSize / 2 + 2;
                 if (nearestPointDist <= minDist)
                     hoverPoint = nearestPoint;
+
+                if (enableHoverSelect) {
+                    curve.setActivePoint(nearestPoint); 
+                }
 
                 curve.ctx.canvas.style.cursor = 'pointer';
             }
