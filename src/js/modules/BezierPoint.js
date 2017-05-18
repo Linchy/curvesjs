@@ -14,6 +14,8 @@ var BezierPoint = (function () {
         this.markerData = "";
         this.uvNameInput = "";
         this.boneNameInput = "";
+        this.uvEnabled = true;
+        this.uvRangesInput = "";
     }
     BezierPoint.prototype.SubtractPoint = function (point) {
         this.position.SubtractPoint(point);

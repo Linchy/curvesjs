@@ -177,6 +177,10 @@ class Curve {
                 point.uvNameInput = dataObj.points[i].uvName;
             if (dataObj.points[i].boneName)
                 point.boneNameInput = dataObj.points[i].boneName;
+            if (typeof dataObj.points[i].uvEnabled !== 'undefined')
+                point.uvEnabled = dataObj.points[i].uvEnabled;
+            if (dataObj.points[i].uvRangesInput)
+                point.uvRangesInput = dataObj.points[i].uvRangesInput.join(';');
 
             // move surface so its origin is in center of canvas
             if (jsonOrigin != null) {
@@ -213,7 +217,9 @@ class Curve {
                 isSurfacePoint: point.isSurfacePoint,
                 markerData: point.markerData.split(';'),
                 uvName: point.uvNameInput,
-                boneName: point.boneNameInput 
+                boneName: point.boneNameInput,
+                uvEnabled: point.uvEnabled,
+                uvRangesInput: point.uvRangesInput.split(';')
             };
         });
 
@@ -260,6 +266,8 @@ class Curve {
             this.curveEditor.markerNameInput.val(this.ActivePoint.markerData);
             this.curveEditor.uvNameInput.val(this.ActivePoint.uvNameInput);
             this.curveEditor.boneNameInput.val(this.ActivePoint.boneNameInput);
+            this.curveEditor.uvEnabledCheckbox.prop("checked", this.ActivePoint.uvEnabled);
+            this.curveEditor.uvRangesInput.val(this.ActivePoint.uvRangesInput);
             this.events.onselectpoint();
         }
         else
@@ -330,6 +338,7 @@ class Curve {
         //this.pushUndoJson();
         this.ReverseBones = value;
         this.setPointsAttr();
+        this.events.onPointDataChanged(); // raise event so json is sent to c#
     }
 
     UVNameOnChange(value: string) {
@@ -343,6 +352,22 @@ class Curve {
     BoneNameOnChange(value: string) {
         if (this.ActivePoint) {
             this.ActivePoint.boneNameInput = value;
+            this.setPointsAttr();
+            this.events.onPointDataChanged(); // raise event so json is sent to c#
+        }
+    }
+
+    uvEnabledOnChange(value: boolean) {
+        if (this.ActivePoint) {
+            this.ActivePoint.uvEnabled = value;
+            this.setPointsAttr();
+            this.events.onPointDataChanged(); // raise event so json is sent to c#
+        }
+    }
+
+    UVRangesOnChange(value: string) {
+        if (this.ActivePoint) {
+            this.ActivePoint.uvRangesInput = value;
             this.setPointsAttr();
             this.events.onPointDataChanged(); // raise event so json is sent to c#
         }

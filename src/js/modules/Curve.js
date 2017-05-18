@@ -106,6 +106,10 @@ var Curve = (function () {
                 point.uvNameInput = dataObj.points[i].uvName;
             if (dataObj.points[i].boneName)
                 point.boneNameInput = dataObj.points[i].boneName;
+            if (typeof dataObj.points[i].uvEnabled !== 'undefined')
+                point.uvEnabled = dataObj.points[i].uvEnabled;
+            if (dataObj.points[i].uvRangesInput)
+                point.uvRangesInput = dataObj.points[i].uvRangesInput.join(';');
             // move surface so its origin is in center of canvas
             if (jsonOrigin != null) {
                 point.SubtractPoint(jsonOrigin);
@@ -133,7 +137,9 @@ var Curve = (function () {
                 isSurfacePoint: point.isSurfacePoint,
                 markerData: point.markerData.split(';'),
                 uvName: point.uvNameInput,
-                boneName: point.boneNameInput
+                boneName: point.boneNameInput,
+                uvEnabled: point.uvEnabled,
+                uvRangesInput: point.uvRangesInput.split(';')
             };
         });
         var dataObj = {
@@ -171,6 +177,8 @@ var Curve = (function () {
             this.curveEditor.markerNameInput.val(this.ActivePoint.markerData);
             this.curveEditor.uvNameInput.val(this.ActivePoint.uvNameInput);
             this.curveEditor.boneNameInput.val(this.ActivePoint.boneNameInput);
+            this.curveEditor.uvEnabledCheckbox.prop("checked", this.ActivePoint.uvEnabled);
+            this.curveEditor.uvRangesInput.val(this.ActivePoint.uvRangesInput);
             this.events.onselectpoint();
         }
         else
@@ -232,6 +240,7 @@ var Curve = (function () {
         //this.pushUndoJson();
         this.ReverseBones = value;
         this.setPointsAttr();
+        this.events.onPointDataChanged(); // raise event so json is sent to c#
     };
     Curve.prototype.UVNameOnChange = function (value) {
         if (this.ActivePoint) {
@@ -243,6 +252,20 @@ var Curve = (function () {
     Curve.prototype.BoneNameOnChange = function (value) {
         if (this.ActivePoint) {
             this.ActivePoint.boneNameInput = value;
+            this.setPointsAttr();
+            this.events.onPointDataChanged(); // raise event so json is sent to c#
+        }
+    };
+    Curve.prototype.uvEnabledOnChange = function (value) {
+        if (this.ActivePoint) {
+            this.ActivePoint.uvEnabled = value;
+            this.setPointsAttr();
+            this.events.onPointDataChanged(); // raise event so json is sent to c#
+        }
+    };
+    Curve.prototype.UVRangesOnChange = function (value) {
+        if (this.ActivePoint) {
+            this.ActivePoint.uvRangesInput = value;
             this.setPointsAttr();
             this.events.onPointDataChanged(); // raise event so json is sent to c#
         }
