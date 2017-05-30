@@ -64,17 +64,17 @@ var Curve = (function () {
                 var offsetY = -20;
                 // add square
                 this.points = [
-                    new BezierPoint(offsetX, offsetY, 0, this.ctx, this.pointColor, this.pointSize, this.cpDist, false, true),
-                    new BezierPoint(offsetX, offsetY * -1, 0, this.ctx, this.pointColor, this.pointSize, this.cpDist, true, true),
-                    new BezierPoint(offsetX * -1, offsetY * -1, 0, this.ctx, this.pointColor, this.pointSize, this.cpDist, true, true),
-                    new BezierPoint(offsetX * -1, offsetY, 0, this.ctx, this.pointColor, this.pointSize, this.cpDist, false, true),
+                    new BezierPoint(offsetX, offsetY, 0, this.ctx, this.pointColor, this.pointSize, this.cpDist, false),
+                    new BezierPoint(offsetX, offsetY * -1, 0, this.ctx, this.pointColor, this.pointSize, this.cpDist, true),
+                    new BezierPoint(offsetX * -1, offsetY * -1, 0, this.ctx, this.pointColor, this.pointSize, this.cpDist, true),
+                    new BezierPoint(offsetX * -1, offsetY, 0, this.ctx, this.pointColor, this.pointSize, this.cpDist, false),
                 ];
             }
             else {
                 // add straight line 
                 this.points = [
-                    new BezierPoint(0, 0, 0, this.ctx, this.pointColor, this.pointSize, this.cpDist, false, true),
-                    new BezierPoint(320, 0, 0, this.ctx, this.pointColor, this.pointSize, this.cpDist, false, true)
+                    new BezierPoint(0, 0, 0, this.ctx, this.pointColor, this.pointSize, this.cpDist, false),
+                    new BezierPoint(320, 0, 0, this.ctx, this.pointColor, this.pointSize, this.cpDist, false)
                 ];
             }
         }
@@ -93,7 +93,7 @@ var Curve = (function () {
         if (!jsonOrigin.z)
             jsonOrigin.z = 0;
         for (var i = 0; i < dataObj.points.length; i++) {
-            var point = new BezierPoint(dataObj.points[i].x, dataObj.points[i].y, dataObj.points[i].z || 0, this.ctx, this.pointColor, this.pointSize, this.cpDist, false, dataObj.points[i].isSurfacePoint);
+            var point = new BezierPoint(dataObj.points[i].x, dataObj.points[i].y, dataObj.points[i].z || 0, this.ctx, this.pointColor, this.pointSize, this.cpDist, false);
             point.cp1.x = dataObj.points[i].cp1X;
             point.cp1.y = dataObj.points[i].cp1Y;
             point.cp1.z = dataObj.points[i].cp1Z || 0;
@@ -134,7 +134,6 @@ var Curve = (function () {
                 cp2X: unscaleFunc(point.cp2.x),
                 cp2Y: unscaleFunc(point.cp2.y),
                 cp2Z: unscaleFunc(point.cp2.z),
-                isSurfacePoint: point.isSurfacePoint,
                 markerData: point.markerData.split(';'),
                 uvName: point.uvNameInput,
                 boneName: point.boneNameInput,
@@ -456,30 +455,41 @@ var Curve = (function () {
         var line_cp2 = this.points[p2Index].cp1;
         var p2 = this.points[p2Index].position;
         // ---
-        var x12 = (line_cp1[this.c1] - p1[this.c1]) * t + p1[this.c1];
-        var y12 = (line_cp1[this.c2] - p1[this.c2]) * t + p1[this.c2];
-        var x23 = (line_cp2[this.c1] - line_cp1[this.c1]) * t + line_cp1[this.c1];
-        var y23 = (line_cp2[this.c2] - line_cp1[this.c2]) * t + line_cp1[this.c2];
-        var x34 = (p2[this.c1] - line_cp2[this.c1]) * t + line_cp2[this.c1];
-        var y34 = (p2[this.c2] - line_cp2[this.c2]) * t + line_cp2[this.c2];
+        var x12 = (line_cp1.x - p1.x) * t + p1.x;
+        var y12 = (line_cp1.y - p1.y) * t + p1.y;
+        var z12 = (line_cp1.z - p1.z) * t + p1.z;
+        var x23 = (line_cp2.x - line_cp1.x) * t + line_cp1.x;
+        var y23 = (line_cp2.y - line_cp1.y) * t + line_cp1.y;
+        var z23 = (line_cp2.z - line_cp1.z) * t + line_cp1.z;
+        var x34 = (p2.x - line_cp2.x) * t + line_cp2.x;
+        var y34 = (p2.y - line_cp2.y) * t + line_cp2.y;
+        var z34 = (p2.z - line_cp2.z) * t + line_cp2.z;
         var x123 = (x23 - x12) * t + x12;
         var y123 = (y23 - y12) * t + y12;
+        var z123 = (z23 - z12) * t + z12;
         var x234 = (x34 - x23) * t + x23;
         var y234 = (y34 - y23) * t + y23;
+        var z234 = (z34 - z23) * t + z23;
         var x1234 = (x234 - x123) * t + x123;
         var y1234 = (y234 - y123) * t + y123;
+        var z1234 = (z234 - z123) * t + z123;
         // ---
-        line_cp1[this.c1] = x12;
-        line_cp1[this.c2] = y12;
-        line_cp2[this.c1] = x34;
-        line_cp2[this.c2] = y34;
+        line_cp1.x = x12;
+        line_cp1.y = y12;
+        line_cp1.z = z12;
+        line_cp2.x = x34;
+        line_cp2.y = y34;
+        line_cp2.z = z34;
         var insertedPoint = new BezierPoint(0, 0, 0, this.ctx, this.pointColor, this.pointSize, this.cpDist);
-        insertedPoint.position[this.c1] = x1234;
-        insertedPoint.position[this.c2] = y1234;
-        insertedPoint.cp1[this.c1] = x123;
-        insertedPoint.cp1[this.c2] = y123;
-        insertedPoint.cp2[this.c1] = x234;
-        insertedPoint.cp2[this.c2] = y234;
+        insertedPoint.position.x = x1234;
+        insertedPoint.position.y = y1234;
+        insertedPoint.position.z = z1234;
+        insertedPoint.cp1.x = x123;
+        insertedPoint.cp1.y = y123;
+        insertedPoint.cp1.z = z123;
+        insertedPoint.cp2.x = x234;
+        insertedPoint.cp2.y = y234;
+        insertedPoint.cp2.z = z234;
         this.points.splice(p2Index, 0, insertedPoint);
     };
     Curve.prototype.canvasEvents = function () {
@@ -559,6 +569,7 @@ var Curve = (function () {
                 x -= curve.originPoint[curve.c1];
                 y -= curve.originPoint[curve.c2];
                 curve.selectedLine.setCoordsFromRelativeXY(curve.c1, curve.c2, x, y, curve.shiftKeyDown ? gridScaleFunc : removeMouseOffsetFunc);
+                hasDragged = true;
                 curve.setPointsAttr();
                 if (curve.events.ondrag1 != null)
                     curve.events.ondrag1();
@@ -723,7 +734,8 @@ var Curve = (function () {
                 if (newPoint != null && curve.events.onnewpoint != null)
                     curve.events.onnewpoint();
             }
-            else if (!curve.ActivePoint.isSurfacePoint) {
+            else if ((curve.CloseLoop && curve.points.length > 3) ||
+                (!curve.CloseLoop && curve.points.length > 2)) {
                 curve.pushUndoJson();
                 curve.points.splice(nearestPointIndex, 1);
                 this.style.cursor = 'initial';
@@ -769,6 +781,7 @@ var Curve = (function () {
         var json = this.undoStack.pop();
         this.setPoints(json);
         this.setActivePoint(this.ActivePoint);
+        this.events.onPointDataChanged(); // raise event so json is sent to c#
         this.draw();
     };
     return Curve;

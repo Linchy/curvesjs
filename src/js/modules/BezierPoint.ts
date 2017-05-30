@@ -5,8 +5,6 @@ class BezierPoint {
 	color: any;
 	size: number;
 
-	isSurfacePoint: boolean;
-
 	position: Point;
 	cp1: Point;
 	cp2: Point;
@@ -30,14 +28,12 @@ class BezierPoint {
 	uvEnabled: boolean;
 	uvRangesInput: string;
 
-	constructor(x: number, y: number, z: number, context: any, color: any, size: number, cpDist: number, reverseCpX?: boolean, isSurfacePoint?: boolean) {
+	constructor(x: number, y: number, z: number, context: any, color: any, size: number, cpDist: number, reverseCpX?: boolean) {
 
 		this.cpDist = cpDist;
 
 		this.color = color;
 		this.size = size;
-
-		this.isSurfacePoint = isSurfacePoint || false;
 
 		this.position = new Point(x, y, z, this.color, this.size, context);
 		this.cp1 = new Point(x + ((reverseCpX ? 1 : -1) * this.cpDist), y, z, 'red', this.size, context);
@@ -187,7 +183,7 @@ class BezierPoint {
 
 		// draw points
 
-		this.position.color = (this.active ? 'orange' : (this.isSurfacePoint ? 'blue' : 'blue'));
+		this.position.color = (this.active ? 'orange' :  'blue');
 		this.position.draw(c1, c2, origin1, origin2);
 
 		if (this.active) {

@@ -1,9 +1,8 @@
 var BezierPoint = (function () {
-    function BezierPoint(x, y, z, context, color, size, cpDist, reverseCpX, isSurfacePoint) {
+    function BezierPoint(x, y, z, context, color, size, cpDist, reverseCpX) {
         this.cpDist = cpDist;
         this.color = color;
         this.size = size;
-        this.isSurfacePoint = isSurfacePoint || false;
         this.position = new Point(x, y, z, this.color, this.size, context);
         this.cp1 = new Point(x + ((reverseCpX ? 1 : -1) * this.cpDist), y, z, 'red', this.size, context);
         this.cp2 = new Point(x + ((reverseCpX ? -1 : 1) * this.cpDist), y, z, 'lightgreen', this.size, context);
@@ -119,7 +118,7 @@ var BezierPoint = (function () {
             this.ctx.stroke();
         }
         // draw points
-        this.position.color = (this.active ? 'orange' : (this.isSurfacePoint ? 'blue' : 'blue'));
+        this.position.color = (this.active ? 'orange' : 'blue');
         this.position.draw(c1, c2, origin1, origin2);
         if (this.active) {
             this.cp1.draw(c1, c2, origin1, origin2);
