@@ -156,6 +156,14 @@ class Curve {
         var dataObj = JSON.parse(pointsJson);
         this.CloseLoop = dataObj.closeLoop;
 
+        // restore scale factor
+        var dataScaleFactor = 1;
+        if (dataObj.scaleFactor) {
+            dataScaleFactor = dataObj.scaleFactor;
+            this.scaleFactor = dataScaleFactor;
+            this.curveEditor.scaleInput.val(dataScaleFactor);
+        }
+
         this.ReverseBones = dataObj.reverseBones ? dataObj.reverseBones : false;
         this.curveEditor.reverseBonesCheckbox.prop("checked", this.ReverseBones);
 
@@ -164,21 +172,32 @@ class Curve {
             jsonOrigin.z = 0;
  
         for (var i = 0; i < dataObj.points.length; i++) {
-            var point = new BezierPoint(dataObj.points[i].x, dataObj.points[i].y, dataObj.points[i].z || 0, this.ctx, this.pointColor, this.pointSize, this.cpDist, false);
-            point.cp1.x = dataObj.points[i].cp1X;
-            point.cp1.y = dataObj.points[i].cp1Y;
-            point.cp1.z = dataObj.points[i].cp1Z || 0;
-            point.cp2.x = dataObj.points[i].cp2X;
-            point.cp2.y = dataObj.points[i].cp2Y;
-            point.cp2.z = dataObj.points[i].cp2Z || 0;
+
+            var point = new BezierPoint(
+                dataObj.points[i].x * dataScaleFactor, 
+                dataObj.points[i].y * dataScaleFactor, 
+                (dataObj.points[i].z || 0) * dataScaleFactor, 
+                this.ctx, this.pointColor, this.pointSize, this.cpDist, false);
+
+            point.cp1.x = dataObj.points[i].cp1X  * dataScaleFactor;
+            point.cp1.y = dataObj.points[i].cp1Y  * dataScaleFactor;
+            point.cp1.z = (dataObj.points[i].cp1Z || 0)  * dataScaleFactor;
+            point.cp2.x = dataObj.points[i].cp2X  * dataScaleFactor;
+            point.cp2.y = dataObj.points[i].cp2Y  * dataScaleFactor;
+            point.cp2.z = (dataObj.points[i].cp2Z || 0) * dataScaleFactor;
+
             if (dataObj.points[i].markerData)
                 point.markerData = dataObj.points[i].markerData.join(';');
+
             if (dataObj.points[i].uvName)
                 point.uvNameInput = dataObj.points[i].uvName;
+
             if (dataObj.points[i].boneName)
                 point.boneNameInput = dataObj.points[i].boneName;
+
             if (typeof dataObj.points[i].uvEnabled !== 'undefined')
                 point.uvEnabled = dataObj.points[i].uvEnabled;
+
             if (dataObj.points[i].uvRangesInput)
                 point.uvRangesInput = dataObj.points[i].uvRangesInput.join(';');
 
@@ -213,7 +232,7 @@ class Curve {
                 cp2X: unscaleFunc(point.cp2.x),
                 cp2Y: unscaleFunc(point.cp2.y),
                 cp2Z: unscaleFunc(point.cp2.z),
-
+ 
                 markerData: point.markerData.split(';'),
                 uvName: point.uvNameInput,
                 boneName: point.boneNameInput,
@@ -224,6 +243,7 @@ class Curve {
 
         var dataObj: any = {
             closeLoop: this.CloseLoop,
+            scaleFactor: this.scaleFactor,
             reverseBones: this.ReverseBones,
             origin: { x: 0, y: 0, z: 0 },
             //origin: { x: this.originPoint.x, y: this.originPoint.y, z: this.originPoint.z },
