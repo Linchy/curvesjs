@@ -94,8 +94,8 @@ var Curve = (function () {
             this.scaleFactor = dataScaleFactor;
             this.curveEditor.scaleInput.val(dataScaleFactor);
         }
-        this.ReverseBones = dataObj.reverseBones ? dataObj.reverseBones : false;
-        this.curveEditor.reverseBonesCheckbox.prop("checked", this.ReverseBones);
+        //this.ReverseBones = dataObj.reverseBones ? dataObj.reverseBones : false;
+        //this.curveEditor.reverseBonesCheckbox.prop("checked", this.ReverseBones);
         var jsonOrigin = dataObj.origin;
         if (!jsonOrigin.z)
             jsonOrigin.z = 0;
@@ -512,9 +512,9 @@ var Curve = (function () {
             hoverPoint = null;
             dragCP = null;
             isDragging = false;
-            // if holding down ctrl, we select the nearest point,
+            // if holding down ALT, we select the nearest point,
             // and ignore control points
-            var enableHoverSelect = curve.ctrlKeyDown;
+            var enableHoverSelect = curve.altKeyDown;
             for (var i = 0; i < curve.points.length; i++) {
                 var p = curve.points[i];
                 var dist = p.position.DistanceToXY(curve.c1, curve.c2, x, y);

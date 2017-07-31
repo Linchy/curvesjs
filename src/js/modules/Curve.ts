@@ -40,7 +40,7 @@ class Curve {
 
     scaleFactor: number = 1;
     origScaleFactor: number = 1;
-
+ 
     mouseX: number;
     mouseY: number;
 
@@ -164,8 +164,8 @@ class Curve {
             this.curveEditor.scaleInput.val(dataScaleFactor);
         }
 
-        this.ReverseBones = dataObj.reverseBones ? dataObj.reverseBones : false;
-        this.curveEditor.reverseBonesCheckbox.prop("checked", this.ReverseBones);
+        //this.ReverseBones = dataObj.reverseBones ? dataObj.reverseBones : false;
+        //this.curveEditor.reverseBonesCheckbox.prop("checked", this.ReverseBones);
 
         var jsonOrigin = dataObj.origin;
         if (!jsonOrigin.z)
@@ -716,9 +716,9 @@ class Curve {
             dragCP = null;
             isDragging = false;
 
-            // if holding down ctrl, we select the nearest point,
+            // if holding down ALT, we select the nearest point,
             // and ignore control points
-            var enableHoverSelect = curve.ctrlKeyDown;
+            var enableHoverSelect = curve.altKeyDown;
 
             for (var i = 0; i < curve.points.length; i++) {
                 var p = curve.points[i];
