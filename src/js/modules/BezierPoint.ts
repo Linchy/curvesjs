@@ -192,16 +192,23 @@ class BezierPoint {
 		}
 	}
 
-	SetPointOnCanvasBorder(c1: string, c2: string, evt: any, dragCP: string, canvasWidth: number, canvasHeight: number, shiftKeyDown: boolean, mX: number, mY: number) {
+	SetPointOnCanvasBorder(c1: string, c2: string, evt: any, dragCP: string, origin: Point, canvasWidth: number, canvasHeight: number, shiftKeyDown: boolean, mX: number, mY: number) {
+
+		var leftSide = -origin.x;
+		var rightSide = canvasWidth - origin.x;
+
+		var topSide = -origin.y;
+		var bottomSide = canvasHeight - origin.y;
+
 		// LEFT
-		if (evt.offsetX < 0) {
+		if (evt.offsetX < leftSide) {
 			if (dragCP == 'cp1') {
-				this.cp1[c1] = 0;
+				this.cp1[c1] = leftSide;
 
 				this.pushRelativeControlPoints(c1, c2);
 
 				if (!shiftKeyDown) {
-					this.cp2[c1] = 0 - this.v1x * 2;
+					this.cp2[c1] = leftSide - this.v1x * 2;
 					this.cp2[c2] = mY - this.v1y * 2;
 				}
 			}
@@ -211,97 +218,97 @@ class BezierPoint {
 				this.pushRelativeControlPoints(c1, c2);
 
 				if (!shiftKeyDown) {
-					this.cp1[c1] = 0 - this.v2x * 2;
+					this.cp1[c1] = leftSide - this.v2x * 2;
 					this.cp1[c2] = mY - this.v2y * 2;
 				}
 			}
 			else {
-				this.position[c1] = 0;
-				this.cp1[c1] = 0 + this.v1x;
-				this.cp2[c1] = 0 + this.v2x;
+				this.position[c1] = leftSide;
+				this.cp1[c1] = leftSide + this.v1x;
+				this.cp2[c1] = leftSide + this.v2x;
 			}
 		}
 		// RIGHT
-		else if (evt.offsetX > canvasWidth) {
+		else if (evt.offsetX > rightSide) {
 			if (dragCP == 'cp1') {
-				this.cp1[c1] = canvasWidth;
+				this.cp1[c1] = rightSide;
 
 				this.pushRelativeControlPoints(c1, c2);
 
 				if (!shiftKeyDown) {
-					this.cp2[c1] = canvasWidth - this.v1x * 2;
+					this.cp2[c1] = rightSide - this.v1x * 2;
 					this.cp2[c2] = mY - this.v1y * 2;
 				}
 			}
 			else if (dragCP == 'cp2') {
-				this.cp2[c1] = canvasWidth;
+				this.cp2[c1] = rightSide;
 
 				this.pushRelativeControlPoints(c1, c2);
 
 				if (!shiftKeyDown) {
-					this.cp1[c1] = canvasWidth - this.v2x * 2;
+					this.cp1[c1] = rightSide - this.v2x * 2;
 					this.cp1[c2] = mY - this.v2y * 2;
 				}
 			}
 			else {
-				this.position[c1] = canvasWidth;
-				this.cp1[c1] = canvasWidth + this.v1x;
-				this.cp2[c1] = canvasWidth + this.v2x;
+				this.position[c1] = rightSide;
+				this.cp1[c1] = rightSide + this.v1x;
+				this.cp2[c1] = rightSide + this.v2x;
 			}
 		}
 		// TOP
-		else if (evt.offsetY < 0) {
+		else if (evt.offsetY < topSide) {
 			if (dragCP == 'cp1') {
-				this.cp1[c2] = 0;
+				this.cp1[c2] = topSide;
 
 				this.pushRelativeControlPoints(c1, c2);
 
 				if (!shiftKeyDown) {
 					this.cp2[c1] = mX - this.v1x * 2;
-					this.cp2[c2] = 0 - this.v1y * 2;
+					this.cp2[c2] = topSide - this.v1y * 2;
 				}
 			}
 			else if (dragCP == 'cp2') {
-				this.cp2[c2] = 0;
+				this.cp2[c2] = topSide;
 
 				this.pushRelativeControlPoints(c1, c2);
 
 				if (!shiftKeyDown) {
 					this.cp1[c1] = mX - this.v2x * 2;
-					this.cp1[c2] = 0 - this.v2y * 2;
+					this.cp1[c2] = topSide - this.v2y * 2;
 				}
 			}
 			else {
-				this.position[c2] = 0;
-				this.cp1[c2] = 0 + this.v1y;
-				this.cp2[c2] = 0 + this.v2y;
+				this.position[c2] = topSide;
+				this.cp1[c2] = topSide + this.v1y;
+				this.cp2[c2] = topSide + this.v2y;
 			}
 		}
 		// BOTTOM
-		else if (evt.offsetY > canvasHeight) {
+		else if (evt.offsetY > bottomSide) {
 			if (dragCP == 'cp1') {
-				this.cp1[c2] = canvasHeight;
+				this.cp1[c2] = bottomSide;
 
 				this.pushRelativeControlPoints(c1, c2);
 				if (!shiftKeyDown) {
 					this.cp2[c1] = mX - this.v1x * 2;
-					this.cp2[c2] = canvasHeight - this.v1y * 2;
+					this.cp2[c2] = bottomSide - this.v1y * 2;
 				}
 			}
 			else if (dragCP == 'cp2') {
-				this.cp2[c2] = canvasHeight;
+				this.cp2[c2] = bottomSide;
 
 				this.pushRelativeControlPoints(c1, c2);
 
 				if (!shiftKeyDown) {
 					this.cp1[c1] = mX - this.v2x * 2;
-					this.cp1[c2] = canvasHeight - this.v2y * 2;
+					this.cp1[c2] = bottomSide - this.v2y * 2;
 				}
 			}
 			else {
-				this.position[c2] = canvasHeight;
-				this.cp1[c2] = canvasHeight + this.v1y;
-				this.cp2[c2] = canvasHeight + this.v2y;
+				this.position[c2] = bottomSide;
+				this.cp1[c2] = bottomSide + this.v1y;
+				this.cp2[c2] = bottomSide + this.v2y;
 			}
 		}
 	}

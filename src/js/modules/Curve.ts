@@ -93,13 +93,15 @@ class Curve {
 
         var self = this;
 
-        window.addEventListener('keydown', function (e) {
+        context.canvas.addEventListener('keydown', function (e) {
+            //self.curveEditor.markerNameInput.val('keydown');
             self.shiftKeyDown = e.shiftKey;
             self.ctrlKeyDown = e.ctrlKey;
             self.altKeyDown = e.altKey;
-        });
+        }); 
 
-        window.addEventListener('keyup', function (e) {
+        context.canvas.addEventListener('keyup', function (e) {
+            //self.curveEditor.markerNameInput.val('keyup, ' + e.ctrlKey + ', ' + e.key.toLowerCase());
             self.shiftKeyDown = e.shiftKey;
             self.ctrlKeyDown = e.ctrlKey;
             self.altKeyDown = e.altKey;
@@ -117,6 +119,10 @@ class Curve {
         this.undoStack = [];
         this.CloseLoop = !block.args.curveOnly;
         
+        this.shiftKeyDown = false; // 16
+        this.ctrlKeyDown = false; // 17
+        this.altKeyDown = false; // 18
+
         if (block) {
             var json = block.getValue();
             if (json.length > 0) {
@@ -772,7 +778,7 @@ class Curve {
         };
 
         this.ctx.canvas.addEventListener('mousemove', function (evt: any) {
-
+            curve.ctx.canvas.focus();
             var gridScaleFunc = function(x, y) {
                 return {
                     x: (Math.round((x) / curve.gridCellSize) * curve.gridCellSize), //+ curve.gridColOffsetX,
@@ -945,11 +951,12 @@ class Curve {
 
                 // dont let point get dragged outside canvas where we can't see it
                 if (!draggingOrigin)
-                    curve.ActivePoint.SetPointOnCanvasBorder(curve.c1, curve.c2, evt, dragCP, curve.cw, curve.ch, curve.shiftKeyDown, x, y);
+                    curve.ActivePoint.SetPointOnCanvasBorder(curve.c1, curve.c2, evt, dragCP, curve.originPoint, curve.cw, curve.ch, curve.shiftKeyDown, x, y);
 
                 dragCP = null;
                 isDragging = false;
                 draggingOrigin = false;
+                //curve.setActivePoint(null);
             }
         });
 
